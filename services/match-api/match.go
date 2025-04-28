@@ -18,6 +18,12 @@ const (
 	MatchClaimed   MatchStatus = "claimed"
 )
 
+// vote is an address of the winner
+type Player struct {
+	walletAddress string
+	vote          string
+}
+
 type match struct {
 	creator     string
 	challenger  string
@@ -27,5 +33,6 @@ type match struct {
 	location    string
 	stake       int
 	currency    string
-	status      string // this should be an enum
+	status      string
+	winner      string
 }
