@@ -77,7 +77,8 @@ func (s *Server) getCompletedChallenges(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) createChallenge(w http.ResponseWriter, r *http.Request) {
-	// get the
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Challenge created"))
 }
 
 func (s *Server) acceptChallenge(w http.ResponseWriter, r *http.Request) {

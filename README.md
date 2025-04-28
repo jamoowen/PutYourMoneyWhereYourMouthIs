@@ -1,9 +1,9 @@
 # Put your money where your mouth is 
 
-## Match Api
+## Challenge Api
 
 
-## Match Service 
+## Challenge Service 
 
 
 ## Mobile react-native expo app

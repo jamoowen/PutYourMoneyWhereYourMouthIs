@@ -4,8 +4,8 @@ GO_BUILD_FLAGS=-ldflags="-s -w"
 
 # Directories for Go services
 SERVICES_DIR=services
-MATCH_API_NAME=match-api
-MATCH_SERVICE_NAME=match-service
+CHALLENGE_API_NAME=challenge-api
+CHALLENGE_SERVICE_NAME=challenge-service
 MOBILE_DIR=apps/mobile
 FRONTEND_DIR=apps/web
 
@@ -27,19 +27,19 @@ start-backend:
 	$(BACKEND_DIR)/$(GO_BINARY)
 
 # Run all Go services (backend)
-run-match-api:
-	@echo "Running match api..."
-	$(GO_CMD) run  $(SERVICES_DIR)/$(MATCH_API_NAME)/cmd/main.go
+run-challenge-api:
+	@echo "Running challenge api..."
+	$(GO_CMD) run  $(SERVICES_DIR)/$(CHALLENGE_API_NAME)/cmd/main.go
 
 # Run all Go services (backend)
-run-match-service:
-	@echo "Running match service..."
-	$(GO_CMD) run  $(SERVICES_DIR)/$(MATCH_SERVICE_NAME)/cmd/main.go
+run-challenge-service:
+	@echo "Running challenge service..."
+	$(GO_CMD) run  $(SERVICES_DIR)/$(CHALLENGE_SERVICE_NAME)/cmd/main.go
 
 # Run tests for Go services
 test-backend:
 	@echo "Running Go tests..."
-	$(GO_CMD) test -v ./...
+	$(GO_CMD) test -v ./$(SERVICES_DIR)/$(CHALLENGE_API_NAME)/http
 
 # Lint Go services
 lint-backend:

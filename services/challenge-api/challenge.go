@@ -1,4 +1,4 @@
-package matchapi
+package challengeapi
 
 // how are we going top represent high precision amouunts?
 // min stake == 5 dollars
@@ -6,16 +6,16 @@ package matchapi
 // chain? eth? sol? ...
 // perhaps sol.
 
-type MatchStatus string
+type ChallengeStatus string
 
 // Constants
 const (
-	MatchOpen      MatchStatus = "open"
-	MatchAccepted  MatchStatus = "accepted"
-	MatchCompleted MatchStatus = "completed"
-	MatchCancelled MatchStatus = "cancelled"
-	MatchDisputed  MatchStatus = "disputed"
-	MatchClaimed   MatchStatus = "claimed"
+	ChallengeOpen      ChallengeStatus = "open"
+	ChallengeAccepted  ChallengeStatus = "accepted"
+	ChallengeCompleted ChallengeStatus = "completed"
+	ChallengeCancelled ChallengeStatus = "cancelled"
+	ChallengeDisputed  ChallengeStatus = "disputed"
+	ChallengeClaimed   ChallengeStatus = "claimed"
 )
 
 // vote is an address of the winner
@@ -24,7 +24,7 @@ type Player struct {
 	vote          string
 }
 
-type match struct {
+type Challenge struct {
 	creator     string
 	challenger  string
 	name        string
