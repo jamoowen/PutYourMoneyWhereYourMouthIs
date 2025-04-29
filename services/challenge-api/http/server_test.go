@@ -41,18 +41,34 @@ func (suite *ChallengeTestSuite) SetupTest() {
 	suite.server = s
 }
 
-func (s *ChallengeTestSuite) TestCreateNewChallenge() {
+func (s *ChallengeTestSuite) TestCreateChallenge() {
 	req, _ := http.NewRequest("POST", "/challenge", nil)
-
-	// Execute Request
 	response := executeRequest(req, s.server)
-	// Check the response code
 	checkResponseCode(s.T(), http.StatusCreated, response.Code)
-	// We can use testify/require to assert values
 	require.Equal(s.T(), "Challenge created", response.Body.String())
-} // In order for 'go test' to run this suite, we need to create
+}
 
-// a normal test function and pass our suite to suite.Run
+func (s *ChallengeTestSuite) TestAcceptChallenge() {
+	challengeId := "1"
+	req, _ := http.NewRequest("PATCH", "/challenge/"+challengeId+"/accept", nil)
+	response := executeRequest(req, s.server)
+	checkResponseCode(s.T(), http.StatusNoContent, response.Code)
+}
+
+func (s *ChallengeTestSuite) TestVote() {
+	challengeId := "1"
+	req, _ := http.NewRequest("PATCH", "/challenge/"+challengeId+"/vote", nil)
+	response := executeRequest(req, s.server)
+	checkResponseCode(s.T(), http.StatusNoContent, response.Code)
+}
+
+func (s *ChallengeTestSuite) TestClaimChallenge() {
+	challengeId := "1"
+	req, _ := http.NewRequest("PATCH", "/challenge/"+challengeId+"/claim", nil)
+	response := executeRequest(req, s.server)
+	checkResponseCode(s.T(), http.StatusNoContent, response.Code)
+}
+
 func TestChallengeTestSuite(t *testing.T) {
 	suite.Run(t, new(ChallengeTestSuite))
 }

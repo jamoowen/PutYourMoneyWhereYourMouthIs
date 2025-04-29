@@ -39,7 +39,7 @@ run-challenge-service:
 # Run tests for Go services
 test-backend:
 	@echo "Running Go tests..."
-	$(GO_CMD) test -v ./$(SERVICES_DIR)/$(CHALLENGE_API_NAME)/http
+	$ gotestsum --format testname ./$(SERVICES_DIR)/$(CHALLENGE_API_NAME)/...
 
 # Lint Go services
 lint-backend:

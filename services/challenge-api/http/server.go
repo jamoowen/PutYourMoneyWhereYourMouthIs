@@ -34,7 +34,7 @@ func (s *Server) MountHandlers() {
 	s.Router.Get("/challenges/completed", s.getCompletedChallenges)
 
 	s.Router.Post("/challenge", s.createChallenge)
-	s.Router.Patch("/challenge/{id}", s.acceptChallenge)
+	s.Router.Patch("/challenge/{id}/accept", s.acceptChallenge)
 	s.Router.Patch("/challenge/{id}/vote", s.vote)
 	s.Router.Patch("/challenge/{id}/claim", s.claim)
 
@@ -82,11 +82,13 @@ func (s *Server) createChallenge(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) acceptChallenge(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNoContent)
 	// get the
 }
 
 // vote for a winner, loser or cancel
 func (s *Server) vote(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNoContent)
 	// get the
 }
 
@@ -97,5 +99,5 @@ func (s *Server) vote(w http.ResponseWriter, r *http.Request) {
 // matches the status
 // if cancel then bothe users should be able to claim what they initially staked
 func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
-	// get the
+	w.WriteHeader(http.StatusNoContent)
 }
