@@ -27,7 +27,7 @@ func (s *Server) MountHandlers() {
 	// all of these routes need auth middleware i think
 	s.Router.Use(middleware.Logger)
 
-	s.Router.Get("/challenges", s.getChallenges)
+	s.Router.Get("/challenges", s.getUnacceptedChallenges)
 	s.Router.Get("/challenges/created", s.getCreatedChallenges)
 	s.Router.Get("/challenges/disputed", s.getDisputedChallenges)
 	s.Router.Get("/challenges/claimable", s.getClaimableChallenges)
@@ -51,7 +51,7 @@ func (s *Server) MountHandlers() {
 }
 
 // returns all of the challenges a user has been sent
-func (s *Server) getChallenges(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getUnacceptedChallenges(w http.ResponseWriter, r *http.Request) {
 	// get the
 }
 

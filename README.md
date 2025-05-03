@@ -1,5 +1,9 @@
 # Put your money where your mouth is 
 
+
+## dependencies:
+gotestsum
+
 ## Challenge Api
 
 
@@ -7,4 +11,6 @@
 
 
 ## Mobile react-native expo app
+
+
 
