@@ -1,4 +1,4 @@
-package challengeapi
+package pymwymi
 
 // how are we going top represent high precision amouunts?
 // min stake == 5 dollars

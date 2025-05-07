@@ -1,4 +1,4 @@
-module github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/challengeapi
+module github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi
 
 go 1.24.1
 
