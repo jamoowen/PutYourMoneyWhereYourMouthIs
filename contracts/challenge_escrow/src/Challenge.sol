@@ -7,15 +7,19 @@ pragma solidity ^0.8.20;
 // import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 // contracts/challenge_escrow/lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol
 // import "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import  "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 
 contract ChallengeEscrow {
+    using SafeERC20 for IERC20
+    
     address public owner;
     uint256 public commissionBalance;
 
     enum ChallengeStatus { Created, Cancelled, Completed, Claimed }
+
+    mapping(address => IERC20) public supportedTokens;
 
     struct Participant {
         address walletAddress;
@@ -25,6 +29,7 @@ contract ChallengeEscrow {
 
     struct Challenge {
         address winner;
+        address token;
         uint256 totalStake;
         uint256 requiredStake;
         ChallengeStatus status;
@@ -54,17 +59,23 @@ contract ChallengeEscrow {
         owner = msg.sender;
     }
 
-    function createChallenge(address[] calldata _participants, uint256 _stake) external returns (uint256) {
+    function addToken(address _token) external onlyOwner {
+        supportedTokens[_token] = IERC20(_token);
+    }
+
+    function createChallenge(address[] calldata _participants, uint256 _stake, address _token) external returns (uint256) {
+        require(supportedTokens[_token] != IERC20(address(0)), "Token not supported");
         require(_stake > 0, "Stake must be greater than 0");
 
         // Transfer stake from the caller to the contract
-        usdc.safeTransferFrom(msg.sender, address(this), _stake);
+        supportedTokens[_token].safeTransferFrom(msg.sender, address(this), _stake);
 
         uint256 id = nextChallengeId++;
         Challenge storage ch = challenges[id];
         ch.requiredStake = _stake;
         ch.totalStake = _stake;
         ch.status = ChallengeStatus.Created;
+        ch.token = _token;
 
         // first add the creator
         ch.participants[msg.sender] = Participant(msg.sender, 0,  false);
