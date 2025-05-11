@@ -16,7 +16,7 @@ contract ChallengeEscrow is ReentrancyGuard {
     uint256 public constant MAX_PARTICIPANTS = 10;
     uint256 public COMMISSION_BASIS_POINTS;
     address public owner;
-    uint256 public commissionBalance;
+    mapping(address => uint256) public commissionBalances;
 
     enum ChallengeStatus {
         Created,
@@ -52,7 +52,7 @@ contract ChallengeEscrow is ReentrancyGuard {
 
     error ChallengeNotActive();
     error InvalidToken();
-    error NotInvited();
+    error NotParticipant();
     error AlreadyAccepted();
     error InsufficientDeposit();
 
@@ -90,7 +90,6 @@ contract ChallengeEscrow is ReentrancyGuard {
         require(_basisPoints > 0 && _basisPoints <= 10_000, "Basis points must be between 1 and 10,000");
         COMMISSION_BASIS_POINTS = _basisPoints;
     }
-
 
     function createChallenge(address[] calldata _participants, uint256 _stake, address _token)
         external
@@ -132,7 +131,7 @@ contract ChallengeEscrow is ReentrancyGuard {
 
         if (challenge.status != ChallengeStatus.Created) revert ChallengeNotActive();
         if (challenge.token != _token) revert InvalidToken();
-        if (p.walletAddress == address(0)) revert NotInvited();
+        if (p.walletAddress == address(0)) revert NotParticipant();
         if (p.stake != 0) revert AlreadyAccepted();
         if (_stake < challenge.requiredStake) revert InsufficientDeposit();
 
@@ -163,6 +162,7 @@ contract ChallengeEscrow is ReentrancyGuard {
     }
 
     function setWinner(uint256 id, address winner) external onlyOwner {
+        if (challenges[id].participants[winner].walletAddress == address(0)) revert NotParticipant();
         challenges[id].winner = winner;
         emit WinnerSet(id, winner);
     }
@@ -201,7 +201,7 @@ contract ChallengeEscrow is ReentrancyGuard {
         p.hasClaimed = true;
         challenge.status = ChallengeStatus.Claimed;
         IERC20(challenge.token).safeTransfer(msg.sender, amount);
-        commissionBalance += commission;
+        commissionBalances[challenge.token] += commission;
 
         emit Claim(msg.sender, amount);
         emit ChallengeStatusUpdated(id, ChallengeStatus.Claimed);
@@ -267,10 +267,12 @@ contract ChallengeEscrow is ReentrancyGuard {
         }
     }
 
-    function withdrawCommission() external onlyOwner {
-        uint256 amount = commissionBalance;
-        commissionBalance = 0;
-        payable(owner).transfer(amount);
+    function withdrawCommission(address _token) external onlyOwner {
+        if (_token == address(0)) revert InvalidToken();
+
+        uint256 amount = commissionBalances[_token];
+        commissionBalances[_token] = 0;
+        IERC20(_token).safeTransfer(owner, amount);
     }
 
     receive() external payable {}
