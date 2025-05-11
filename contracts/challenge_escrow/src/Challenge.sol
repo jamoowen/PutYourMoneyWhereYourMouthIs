@@ -8,11 +8,13 @@ pragma solidity ^0.8.20;
 // import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-contracts/utils/ReentrancyGuard.sol";
 
-contract ChallengeEscrow {
+contract ChallengeEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant MAX_PARTICIPANTS = 10;
+    uint256 public COMMISSION_BASIS_POINTS;
     address public owner;
     uint256 public commissionBalance;
 
@@ -39,12 +41,14 @@ contract ChallengeEscrow {
         uint256 requiredStake;
         ChallengeStatus status;
         mapping(address => Participant) participants;
-        address[]  participantArray;
+        address[] participantArray;
     }
 
     mapping(uint256 => Challenge) private challenges;
-    uint256[]  challengeArray;
+    uint256[] challengeArray;
     uint256 private nextChallengeId;
+
+    error MaxParticipantsExceeded();
 
     error ChallengeNotActive();
     error InvalidToken();
@@ -59,6 +63,7 @@ contract ChallengeEscrow {
     error AlreadyClaimed();
     error ClaimsNotAllowed();
     error NotOwner();
+    error NotWinner();
 
     event ChallengeCreated(uint256 indexed id, address indexed creator);
     event ChallengeAccepted(uint256 indexed id, address indexed participant, uint256 amount);
@@ -81,13 +86,19 @@ contract ChallengeEscrow {
         supportedTokens[_token] = IERC20(_token);
     }
 
+    function setCommissionBasisPoints(uint256 _basisPoints) external onlyOwner {
+        require(_basisPoints > 0 && _basisPoints <= 10_000, "Basis points must be between 1 and 10,000");
+        COMMISSION_BASIS_POINTS = _basisPoints;
+    }
+
+
     function createChallenge(address[] calldata _participants, uint256 _stake, address _token)
         external
         returns (uint256)
     {
-        require(supportedTokens[_token] != IERC20(address(0)), "Token not supported");
-        require(_stake > 0, "Stake must be greater than 0");
-        require(_participants.length < 10, "Max 10 participants");
+        if (supportedTokens[_token] == IERC20(address(0))) revert InvalidToken();
+        if (_stake <= 0) revert InsufficientDeposit();
+        if (_participants.length + 1 > MAX_PARTICIPANTS) revert MaxParticipantsExceeded();
 
         // Transfer stake from the caller to the contract
         supportedTokens[_token].safeTransferFrom(msg.sender, address(this), _stake);
@@ -102,7 +113,7 @@ contract ChallengeEscrow {
         challenge.token = _token;
 
         // first add the creator
-        challenge.participants[msg.sender] = Participant(msg.sender, 0, false);
+        challenge.participants[msg.sender] = Participant(msg.sender, _stake, false);
         challenge.participantArray.push(msg.sender);
 
         for (uint256 i = 0; i < _participants.length; i++) {
@@ -134,9 +145,9 @@ contract ChallengeEscrow {
         bool allParticipantsHaveStaked = true;
         for (uint256 i = 0; i < challenge.participantArray.length; i++) {
             if (challenge.participants[challenge.participantArray[i]].stake < challenge.requiredStake) {
-                allParticipantsHaveStaked=false;
+                allParticipantsHaveStaked = false;
                 break;
-            } 
+            }
         }
         if (allParticipantsHaveStaked) {
             challenge.status = ChallengeStatus.Pending;
@@ -156,60 +167,72 @@ contract ChallengeEscrow {
         emit WinnerSet(id, winner);
     }
 
-    function claimRefund(uint256 id) external {
+    function claimRefund(uint256 id) external nonReentrant {
         Challenge storage challenge = challenges[id];
         Participant storage p = challenge.participants[msg.sender];
 
         if (challenge.status != ChallengeStatus.Cancelled) revert NotCancelled();
         if (p.hasClaimed) revert AlreadyClaimed();
-        if (challenge.totalStake<p.stake) revert ClaimsNotAllowed();
+        if (challenge.totalStake < p.stake) revert ClaimsNotAllowed();
 
-        p.hasClaimed = true;
         uint256 refund = p.stake;
         challenge.totalStake -= refund;
-        payable(msg.sender).transfer(refund);
+        p.hasClaimed = true;
+        IERC20(challenge.token).safeTransfer(msg.sender, refund);
         emit Claim(msg.sender, refund);
 
-        if (challenge.totalStake == 0){
+        // if everyone has claimed their refund, then we should change status
+        if (challenge.totalStake == 0) {
             challenge.status = ChallengeStatus.Claimed;
             emit ChallengeStatusUpdated(id, ChallengeStatus.Claimed);
         }
-
     }
-    
-    function claimWinnings(uint256 id) external {
+
+    function claimWinnings(uint256 id) external nonReentrant {
         Challenge storage challenge = challenges[id];
         Participant storage p = challenge.participants[msg.sender];
 
+        if (challenge.winner != msg.sender) revert NotWinner();
         if (challenge.status != ChallengeStatus.Completed) revert NotCompleted();
         if (p.hasClaimed) revert AlreadyClaimed();
 
-        challenge.status = ChallengeStatus.Claimed;
-
-        uint256 amount = challenge.totalStake;
+        uint256 commission = (challenge.totalStake * COMMISSION_BASIS_POINTS) / 10_000;
+        uint256 amount = challenge.totalStake - commission;
         p.hasClaimed = true;
-        payable(msg.sender).transfer(amount);
         challenge.status = ChallengeStatus.Claimed;
+        IERC20(challenge.token).safeTransfer(msg.sender, amount);
+        commissionBalance += commission;
+
         emit Claim(msg.sender, amount);
         emit ChallengeStatusUpdated(id, ChallengeStatus.Claimed);
     }
 
-    function getChallenge(uint256 id) external view returns (
-        ChallengeStatus status,
-        address winner,
-        uint256 totalStake,
-        uint256 requiredStake,
-        address[] memory participantArray
-    ) {
+    function getChallenge(uint256 id)
+        external
+        view
+        returns (
+            ChallengeStatus status,
+            address winner,
+            uint256 totalStake,
+            uint256 requiredStake,
+            address[] memory participantArray
+        )
+    {
         Challenge storage challenge = challenges[id];
-        return ( challenge.status, challenge.winner, challenge.totalStake, challenge.requiredStake, challenge.participantArray);
+        return (
+            challenge.status,
+            challenge.winner,
+            challenge.totalStake,
+            challenge.requiredStake,
+            challenge.participantArray
+        );
     }
 
-    function getParticipant(uint256 id, address user) external view returns (
-        address walletAddress,
-        uint256 stake,
-        bool hasClaimed 
-    ) {
+    function getParticipant(uint256 id, address user)
+        external
+        view
+        returns (address walletAddress, uint256 stake, bool hasClaimed)
+    {
         Participant storage p = challenges[id].participants[user];
         return (p.walletAddress, p.stake, p.hasClaimed);
     }
@@ -221,13 +244,18 @@ contract ChallengeEscrow {
 
         uint256 completedCounter = 0;
         for (uint256 i = 0; i < challengeArrayCopy.length; i++) {
-            if (challenges[challengeArrayCopy[i]].status == ChallengeStatus.Claimed) {
-                delete challenges[challengeArrayCopy[i]];
-                completedChallenges[completedCounter] = challengeArrayCopy[i];
+            uint256 id = challengeArrayCopy[i];
+            Challenge storage challenge = challenges[id];
+            if (challenge.status == ChallengeStatus.Claimed) {
+                for (uint256 j = 0; j < challenge.participantArray.length; j++) {
+                    delete challenge.participants[challenge.participantArray[j]];
+                }
+                delete challenges[id];
+                completedChallenges[completedCounter] = id;
                 completedCounter++;
             } else {
-                challengeArray.push(challengeArrayCopy[i]);
-            }       
+                challengeArray.push(id);
+            }
         }
 
         if (challengeArray.length < challengeArrayCopy.length) {
@@ -237,7 +265,6 @@ contract ChallengeEscrow {
             }
             emit CompletedChallengesDeleted(completedChallengesTrimmed);
         }
-        
     }
 
     function withdrawCommission() external onlyOwner {
