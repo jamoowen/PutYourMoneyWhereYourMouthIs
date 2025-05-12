@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-
-// import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-// contracts/challenge_escrow/lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol
-// import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-contracts/utils/ReentrancyGuard.sol";
@@ -27,6 +22,7 @@ contract ChallengeEscrow is ReentrancyGuard {
     }
 
     mapping(address => IERC20) public supportedTokens;
+    address[] public supportedTokensArray;
 
     struct Participant {
         address walletAddress;
@@ -54,7 +50,7 @@ contract ChallengeEscrow is ReentrancyGuard {
     error InvalidToken();
     error NotParticipant();
     error AlreadyAccepted();
-    error InsufficientDeposit();
+    error InsufficientAmount();
 
     error NotAccepted();
     error NotCancelled();
@@ -78,12 +74,14 @@ contract ChallengeEscrow is ReentrancyGuard {
         _;
     }
 
-    constructor() {
+    constructor(uint256 _basisPoints) {
         owner = msg.sender;
+        COMMISSION_BASIS_POINTS = _basisPoints;
     }
 
     function addToken(address _token) external onlyOwner {
         supportedTokens[_token] = IERC20(_token);
+        supportedTokensArray.push(_token);
     }
 
     function setCommissionBasisPoints(uint256 _basisPoints) external onlyOwner {
@@ -96,7 +94,7 @@ contract ChallengeEscrow is ReentrancyGuard {
         returns (uint256)
     {
         if (supportedTokens[_token] == IERC20(address(0))) revert InvalidToken();
-        if (_stake <= 0) revert InsufficientDeposit();
+        if (_stake <= 0) revert InsufficientAmount();
         if (_participants.length + 1 > MAX_PARTICIPANTS) revert MaxParticipantsExceeded();
 
         // Transfer stake from the caller to the contract
@@ -133,7 +131,7 @@ contract ChallengeEscrow is ReentrancyGuard {
         if (challenge.token != _token) revert InvalidToken();
         if (p.walletAddress == address(0)) revert NotParticipant();
         if (p.stake != 0) revert AlreadyAccepted();
-        if (_stake < challenge.requiredStake) revert InsufficientDeposit();
+        if (_stake < challenge.requiredStake) revert InsufficientAmount();
 
         supportedTokens[_token].safeTransferFrom(msg.sender, address(this), _stake);
 
@@ -271,6 +269,7 @@ contract ChallengeEscrow is ReentrancyGuard {
         if (_token == address(0)) revert InvalidToken();
 
         uint256 amount = commissionBalances[_token];
+        if (amount == 0) revert InsufficientAmount();
         commissionBalances[_token] = 0;
         IERC20(_token).safeTransfer(owner, amount);
     }

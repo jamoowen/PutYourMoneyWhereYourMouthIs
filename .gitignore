@@ -34,11 +34,8 @@ go.work.sum
 **/cache/
 **/broadcast/
 **/docs/
+*/contracts/challenge_escrow/broadcast/
 
-# Allow test broadcasts for local chains
-!/contracts/**/broadcast/
-*/broadcast/*/31337/
-*/broadcast/**/dry-run/
 
 # --- Expo / React Native ---
 .expo/
