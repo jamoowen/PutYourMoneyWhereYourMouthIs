@@ -15,7 +15,7 @@ import (
 // which we can then inspect.
 func executeRequest(req *http.Request, s *Server) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
-	s.Router.ServeHTTP(rr, req)
+	s.router.ServeHTTP(rr, req)
 
 	return rr
 }

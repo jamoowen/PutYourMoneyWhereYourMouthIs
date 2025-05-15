@@ -6,33 +6,35 @@ package pymwymi
 // chain? eth? sol? ...
 // perhaps sol.
 
-type ChallengeStatus string
+type ChallengeStatus int8
 
 // Constants
 const (
-	ChallengeOpen      ChallengeStatus = "open"
-	ChallengeAccepted  ChallengeStatus = "accepted"
-	ChallengeCompleted ChallengeStatus = "completed"
-	ChallengeCancelled ChallengeStatus = "cancelled"
-	ChallengeDisputed  ChallengeStatus = "disputed"
-	ChallengeClaimed   ChallengeStatus = "claimed"
+	StateCreated ChallengeStatus = iota
+	StatePending
+	StateCancelled
+	StateCompleted
+	StateClaimed
 )
+
+type WalletAddress string
 
 // vote is an address of the winner
 type Player struct {
-	walletAddress string
+	name          string
+	walletAddress WalletAddress
 	vote          string
 }
 
 type Challenge struct {
-	creator     string
-	challenger  string
-	name        string
-	category    string
-	description string
-	location    string
-	stake       int
-	currency    string
-	status      string
-	winner      string
+	creator      WalletAddress
+	name         string
+	category     string
+	description  string
+	location     string
+	stake        int
+	currency     string
+	participants []Player
+	status       ChallengeStatus
+	winner       string
 }
