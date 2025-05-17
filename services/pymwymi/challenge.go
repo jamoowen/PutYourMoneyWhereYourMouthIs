@@ -19,22 +19,23 @@ const (
 
 type WalletAddress string
 
-// vote is an address of the winner
 type Player struct {
-	name          string
-	walletAddress WalletAddress
-	vote          string
+	Name            string        `bson:"name" json:"name"`
+	WalletAddress   WalletAddress `bson:"walletAddress" json:"walletAddress"`
+	Vote            string        `bson:"vote" json:"vote"`
+	TransactionHash string        `bson:"transactionHash" json:"transactionHash"`
 }
 
 type Challenge struct {
-	creator      WalletAddress
-	name         string
-	category     string
-	description  string
-	location     string
-	stake        int
-	currency     string
-	participants []Player
-	status       ChallengeStatus
-	winner       string
+	TransactionHash string          `bson:"transactionHash" json:"transactionHash"`
+	Creator         WalletAddress   `bson:"creator" json:"creator"`
+	Name            string          `bson:"name" json:"name"`
+	Category        string          `bson:"category" json:"category"`
+	Description     string          `bson:"description" json:"description"`
+	Location        string          `bson:"location" json:"location"`
+	Stake           int             `bson:"stake" json:"stake"`
+	Currency        string          `bson:"currency" json:"currency"`
+	Participants    []Player        `bson:"participants" json:"participants"`
+	Status          ChallengeStatus `bson:"status" json:"status"`
+	Winner          string          `bson:"winner" json:"winner"`
 }
