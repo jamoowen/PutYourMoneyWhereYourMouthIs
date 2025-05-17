@@ -24,13 +24,30 @@ func (s *Storage) NewChallengeStore(client *mongo.Client, dbName string) *Storag
 	}
 }
 
+func (s *Storage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error {
+	_, err := s.c.InsertOne(ctx, challenge)
+	return err
+}
+
+// replaces the whole challenge so be wary of this
+func (s *Storage) UpdateChallenge(ctx context.Context, challenge *pymwymi.PersistedChallenge) error {
+	filter := bson.D{}
+	objectID, err := bson.ObjectIDFromHex(challenge.ID)
+	if err != nil {
+		return err
+	}
+	filter = append(filter, bson.E{Key: "_id", Value: objectID})
+	_, err = s.c.UpdateOne(ctx, bson.M{"transactionHash": challenge.TransactionHash}, bson.M{"$set": challenge})
+	return err
+}
+
+// you can submit an empty walletAddress but not an empty status
 func (s *Storage) getChallengesForUser(
 	ctx context.Context, walletAddress string,
 	status pymwymi.ChallengeStatus,
 	pageOpts pymwymi.PageOpts,
-) (*[]pymwymi.Challenge, error) {
-	// return challenges matching wallet Address and status
-	result := []pymwymi.Challenge{}
+) (*[]pymwymi.PersistedChallenge, error) {
+	result := []pymwymi.PersistedChallenge{}
 	filter := bson.D{}
 	filter = append(filter, bson.E{Key: "status", Value: status})
 	if walletAddress != "" {
@@ -41,7 +58,6 @@ func (s *Storage) getChallengesForUser(
 	if err != nil {
 		return nil, err
 	}
-
 	cursor.All(ctx, &result)
 	return &result, nil
 }

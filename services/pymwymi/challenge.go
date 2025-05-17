@@ -39,3 +39,9 @@ type Challenge struct {
 	Status          ChallengeStatus `bson:"status" json:"status"`
 	Winner          string          `bson:"winner" json:"winner"`
 }
+
+type PersistedChallenge struct {
+	ID        string `json:"_id" bson:"_id"`
+	CreatedAt int64  `json:"createdAt" bson:"createdAt"`
+	Challenge
+}
