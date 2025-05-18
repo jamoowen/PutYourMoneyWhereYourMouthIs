@@ -2,9 +2,11 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
 )
 
 func (s *Server) getAuthRoutes() chi.Router {
@@ -33,9 +35,22 @@ func authorize(w http.ResponseWriter, r *http.Request) {
 	var authDTO AuthDTO
 	err := json.NewDecoder(r.Body).Decode(&authDTO)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		handleHttpError(w, fmt.Errorf("failed to parse body"), http.StatusBadRequest)
 		return
 	}
-
+	if authDTO.WalletAddress == "" || authDTO.Sig == "" {
+		handleHttpError(w, fmt.Errorf("walletAddress and sig are required"), http.StatusBadRequest)
+		return
+	}
+	valid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig)
+	if err != nil {
+		handleHttpError(w, err, http.StatusInternalServerError)
+		return
+	}
+	if !valid {
+		handleHttpError(w, fmt.Errorf("invalid signature"), http.StatusUnauthorized)
+		return
+	}
+	// create jwt
 	// completedChallenges, err := s.challengeService.getChallenges(user.walletAddress, pymwymi.StateCompleted)
 }

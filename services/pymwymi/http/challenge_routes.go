@@ -21,7 +21,5 @@ func (s *Server) getChallengeRoutes() chi.Router {
 // do i want different routes for all challenges?
 
 func getCompletedChallenges(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
 	// completedChallenges, err := s.challengeService.getChallenges(user.walletAddress, pymwymi.StateCompleted)
 }
