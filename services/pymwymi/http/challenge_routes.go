@@ -22,7 +22,6 @@ func (s *Server) getChallengeRoutes() chi.Router {
 
 func getCompletedChallenges(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("user")
 
 	// completedChallenges, err := s.challengeService.getChallenges(user.walletAddress, pymwymi.StateCompleted)
 }

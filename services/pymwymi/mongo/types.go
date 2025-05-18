@@ -1,8 +1,6 @@
 package mongo
 
-import "github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
-
-type DocFilter struct {
+type MongoField struct {
 	Field string
 	Value string
 }

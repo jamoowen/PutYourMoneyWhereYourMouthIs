@@ -11,7 +11,9 @@ import (
 
 type ChallengeStore interface {
 	// need some sort of mongo connection here
-	getChallengesForUser(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts)
+	CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error
+	UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error
+	getChallengesByStatus(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts)
 }
 
 type Storage struct {
@@ -29,31 +31,33 @@ func (s *Storage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challe
 	return err
 }
 
-// replaces the whole challenge so be wary of this
-func (s *Storage) UpdateChallenge(ctx context.Context, challenge *pymwymi.PersistedChallenge) error {
-	filter := bson.D{}
-	objectID, err := bson.ObjectIDFromHex(challenge.ID)
+func (s *Storage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error {
+	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
-	filter = append(filter, bson.E{Key: "_id", Value: objectID})
-	_, err = s.c.UpdateOne(ctx, bson.M{"transactionHash": challenge.TransactionHash}, bson.M{"$set": challenge})
+	filter := bson.D{bson.E{Key: "_id", Value: objectId}}
+	setDoc := bson.D{}
+	for _, field := range fieldsToSet {
+		setDoc = append(setDoc, bson.E{Key: field.Field, Value: field.Value})
+	}
+	_, err = s.c.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: setDoc}})
 	return err
 }
 
 // you can submit an empty walletAddress but not an empty status
-func (s *Storage) getChallengesForUser(
-	ctx context.Context, walletAddress string,
+func (s *Storage) getChallengesByStatus(
+	ctx context.Context,
+	walletAddress string,
 	status pymwymi.ChallengeStatus,
 	pageOpts pymwymi.PageOpts,
 ) (*[]pymwymi.PersistedChallenge, error) {
 	result := []pymwymi.PersistedChallenge{}
-	filter := bson.D{}
-	filter = append(filter, bson.E{Key: "status", Value: status})
+	filter := bson.D{bson.E{Key: "status", Value: status}}
 	if walletAddress != "" {
 		filter = append(filter, bson.E{Key: "walletAddress", Value: walletAddress})
 	}
-	options := setPageOpts(options.Find(), pageOpts)
+	options := setPageOptions(options.Find(), pageOpts)
 	cursor, err := s.c.Find(ctx, filter, options)
 	if err != nil {
 		return nil, err
@@ -63,7 +67,7 @@ func (s *Storage) getChallengesForUser(
 }
 
 // if you pass 0 for page and limit it will return all
-func setPageOpts(opts *options.FindOptionsBuilder, p pymwymi.PageOpts) *options.FindOptionsBuilder {
+func setPageOptions(opts *options.FindOptionsBuilder, p pymwymi.PageOpts) *options.FindOptionsBuilder {
 	if p.Page != 0 && p.Limit != 0 {
 		opts.SetSkip((p.Page - 1) * p.Limit)
 	}
