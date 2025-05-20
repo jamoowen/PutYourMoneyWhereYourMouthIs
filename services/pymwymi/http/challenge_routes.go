@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) getChallengeRoutes() chi.Router {
+func (s *Server) challengeRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/completed", getCompletedChallenges)

@@ -37,7 +37,6 @@ type ChallengeTestSuite struct {
 
 func (suite *ChallengeTestSuite) SetupTest() {
 	s := CreateNewServer()
-	s.MountHandlers()
 	suite.server = s
 }
 

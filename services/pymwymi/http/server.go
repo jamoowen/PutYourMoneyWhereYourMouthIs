@@ -1,7 +1,6 @@
 package http
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -11,9 +10,10 @@ import (
 )
 
 type Server struct {
-	router *chi.Mux
-	cs     *challenge.ChallengeService
-	bs     *blockchain.BlockchainService
+	router            *chi.Mux
+	challengeService  *challenge.ChallengeService
+	blockchainService *blockchain.BlockchainService
+	jwtService        *jwtService
 	// Db, config can be added here
 }
 
@@ -36,7 +36,8 @@ func CreateNewServer() *Server {
 	// processing should be stopped.
 	s.router.Use(middleware.Timeout(60 * time.Second))
 
-	s.router.Mount("/challenge", s.getChallengeRoutes())
+	s.router.Mount("/challenge", s.challengeRoutes())
+	s.router.Mount("/auth", s.authRoutes())
 
 	return s
 }
