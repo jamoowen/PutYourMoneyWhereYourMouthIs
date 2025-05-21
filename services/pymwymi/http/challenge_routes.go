@@ -4,12 +4,17 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
 )
 
-func (s *Server) challengeRoutes() chi.Router {
+type challengeRoutes struct {
+	challengeService *challenge.ChallengeService
+}
+
+func (c *challengeRoutes) mountChallengeRoutes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/completed", getCompletedChallenges)
+	r.Get("/completed", c.getCompletedChallenges)
 	// r.Get("/invited", handlerFn http.HandlerFunc)
 	// r.Get("/pending", handlerFn http.HandlerFunc)
 
@@ -20,6 +25,6 @@ func (s *Server) challengeRoutes() chi.Router {
 
 // do i want different routes for all challenges?
 
-func getCompletedChallenges(w http.ResponseWriter, r *http.Request) {
+func (c *challengeRoutes) getCompletedChallenges(w http.ResponseWriter, r *http.Request) {
 	// completedChallenges, err := s.challengeService.getChallenges(user.walletAddress, pymwymi.StateCompleted)
 }

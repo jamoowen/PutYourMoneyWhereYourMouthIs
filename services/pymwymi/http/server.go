@@ -18,10 +18,13 @@ type Server struct {
 }
 
 // need auth middleware - get user to sign transaction
-
-func CreateNewServer() *Server {
-	s := &Server{}
-	s.router = chi.NewRouter()
+func CreateNewServer(cS *challenge.ChallengeService, bS *blockchain.BlockchainService, jwtS *jwtService) *Server {
+	s := &Server{
+		challengeService:  cS,
+		blockchainService: bS,
+		jwtService:        jwtS,
+		router:            chi.NewRouter(),
+	}
 	// set content type
 	// rate limit?
 	// auth
@@ -36,8 +39,15 @@ func CreateNewServer() *Server {
 	// processing should be stopped.
 	s.router.Use(middleware.Timeout(60 * time.Second))
 
-	s.router.Mount("/challenge", s.challengeRoutes())
-	s.router.Mount("/auth", s.authRoutes())
+	aR := authRoutes{
+		jwtService: jwtS,
+	}
+	s.router.Mount("/auth", aR.mountAuthRoutes())
+
+	cR := challengeRoutes{
+		challengeService: cS,
+	}
+	s.router.Mount("/challenge", cR.mountChallengeRoutes())
 
 	return s
 }
