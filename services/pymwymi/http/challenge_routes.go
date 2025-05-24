@@ -4,30 +4,24 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
-	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
 )
 
-type challengeRoutes struct {
-	challengeService *challenge.ChallengeService
-	authService      *auth.AuthService
-}
-
-func (c *challengeRoutes) mountChallengeRoutes() chi.Router {
+func (s *Server) mountChallengeRoutes() chi.Router {
 	r := chi.NewRouter()
-	r.With(c.authService.)
 
-	r.Get("/completed", c.getCompletedChallenges)
+	r.With(s.authMiddleware).Get("/", s.getCompletedChallenges)
 	// r.Get("/invited", handlerFn http.HandlerFunc)
 	// r.Get("/pending", handlerFn http.HandlerFunc)
 
 	return r
-
-	// s.router.Mount(pattern string, handler http.Handler)
 }
 
 // do i want different routes for all challenges?
 
-func (c *challengeRoutes) getCompletedChallenges(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getCompletedChallenges(w http.ResponseWriter, r *http.Request) {
+	// get user from ctx...
+	// get status from query param
+	status := r.URL.Query().Get("status")
+
 	completedChallenges, err := s.challengeService.getChallenges(user.walletAddress, pymwymi.StateCompleted)
 }

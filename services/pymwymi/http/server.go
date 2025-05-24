@@ -1,6 +1,7 @@
 package http
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -11,7 +12,11 @@ import (
 )
 
 type Server struct {
-	router *chi.Mux
+	router            *chi.Mux
+	authService       *auth.AuthService
+	blockchainService *blockchain.BlockchainService
+	challengeService  *challenge.ChallengeService
+	authMiddleware    func(http.Handler) http.Handler
 	// Db, config can be added here
 }
 
@@ -29,22 +34,16 @@ func CreateNewServer(cS *challenge.ChallengeService, bS *blockchain.BlockchainSe
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(middleware.AllowContentType("application/json"))
 
-	requireAuth := authMiddleware(aS)
+	s.authMiddleware = authMiddleware(aS)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
 	s.router.Use(middleware.Timeout(60 * time.Second))
 
-	aR := authRoutes{
-		authService: aS,
-	}
-	s.router.Mount("/auth", aR.mountAuthRoutes())
+	s.router.Mount("/auth", s.mountAuthRoutes())
 
-	cR := challengeRoutes{
-		challengeService: cS,
-	}
-	s.router.Mount("/challenge", cR.mountChallengeRoutes())
+	// s.router.Mount("/challenge", s.mountChallengeRoutes())
 
 	return s
 }

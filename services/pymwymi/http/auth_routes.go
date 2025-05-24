@@ -7,23 +7,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
-	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
 )
 
-type authRoutes struct {
-	authService *auth.AuthService
-}
-
-func (a *authRoutes) mountAuthRoutes() chi.Router {
+func (s *Server) mountAuthRoutes() chi.Router {
 	r := chi.NewRouter()
-
-	// NOTE MUST FLIP SECURE TO TRUE IN PROD
-	r.Post("/", a.authenticate)
 	return r
 }
 
-func (a *authRoutes) authenticate(w http.ResponseWriter, r *http.Request) {
+func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	type AuthDTO struct {
 		WalletAddress string `json:"walletAddress"`
 		Sig           string `json:"sig"`
@@ -47,7 +39,7 @@ func (a *authRoutes) authenticate(w http.ResponseWriter, r *http.Request) {
 		handleHttpError(w, fmt.Errorf("signature is invalid"), http.StatusUnauthorized)
 		return
 	}
-	jwt, err := a.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
+	jwt, err := s.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
 	if err != nil {
 		handleHttpError(w, err, http.StatusInternalServerError)
 		return
