@@ -2,17 +2,17 @@ package http
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
 )
 
 type authRoutes struct {
-	jwtService *jwtService
+	authService *auth.AuthService
 }
 
 func (a *authRoutes) mountAuthRoutes() chi.Router {
@@ -38,24 +38,21 @@ func (a *authRoutes) authenticate(w http.ResponseWriter, r *http.Request) {
 		handleHttpError(w, fmt.Errorf("walletAddress and sig are required"), http.StatusBadRequest)
 		return
 	}
-	valid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig)
+	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig)
 	if err != nil {
 		handleHttpError(w, err, http.StatusInternalServerError)
 		return
 	}
-	if !valid {
-		handleHttpError(w, fmt.Errorf("invalid signature"), http.StatusUnauthorized)
+	if !isSigValid {
+		handleHttpError(w, fmt.Errorf("signature is invalid"), http.StatusUnauthorized)
 		return
 	}
-	jwt, err := a.jwtService.createUserJWT(pymwymi.User{Name: "Unknown", WalletAddress: authDTO.WalletAddress})
-	if errors.As(err, &InvalidJWTError{}) {
-		handleHttpError(w, err, http.StatusUnauthorized)
-		return
-	}
+	jwt, err := a.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
 	if err != nil {
 		handleHttpError(w, err, http.StatusInternalServerError)
 		return
 	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "pymwymi_auth_token",
 		Value:    jwt,
@@ -64,6 +61,7 @@ func (a *authRoutes) authenticate(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		SameSite: http.SameSiteNoneMode, // this a little dodgy might want to changee
 	})
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message":"authenticated"}`))
 }

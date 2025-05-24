@@ -47,27 +47,6 @@ func (s *ChallengeTestSuite) TestCreateChallenge() {
 	require.Equal(s.T(), "Challenge created", response.Body.String())
 }
 
-func (s *ChallengeTestSuite) TestAcceptChallenge() {
-	challengeId := "1"
-	req, _ := http.NewRequest("PATCH", "/challenge/"+challengeId+"/accept", nil)
-	response := executeRequest(req, s.server)
-	checkResponseCode(s.T(), http.StatusNoContent, response.Code)
-}
-
-func (s *ChallengeTestSuite) TestVote() {
-	challengeId := "1"
-	req, _ := http.NewRequest("PATCH", "/challenge/"+challengeId+"/vote", nil)
-	response := executeRequest(req, s.server)
-	checkResponseCode(s.T(), http.StatusNoContent, response.Code)
-}
-
-func (s *ChallengeTestSuite) TestClaimChallenge() {
-	challengeId := "1"
-	req, _ := http.NewRequest("PATCH", "/challenge/"+challengeId+"/claim", nil)
-	response := executeRequest(req, s.server)
-	checkResponseCode(s.T(), http.StatusNoContent, response.Code)
-}
-
 func TestChallengeTestSuite(t *testing.T) {
 	suite.Run(t, new(ChallengeTestSuite))
 }

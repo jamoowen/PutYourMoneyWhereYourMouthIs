@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/mongo"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/joho/godotenv"
 )
 
@@ -30,11 +32,13 @@ func main() {
 	// load env vars
 	validateEnvVars(
 		os.Getenv("MONGO_URI"),
+		os.Getenv("JWT_SECRET"),
 	)
 
 	mongoClient := mongo.ConnectToMongo(os.Getenv("MONGO_URI"))
 
-	challengeDB := mongo.NewChallengeStore(mongoClient)
+	jwtTokenExpiration := time.Hour * 24 * 7
+	authService := auth.GetAuthService(os.Getenv("JWT_SECRET"), jwtTokenExpiration)
 
 	log.Printf("Listening on http://localhost:%v\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), r))

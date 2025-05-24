@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 )
 
 func paginate(next http.Handler) http.Handler {
@@ -19,17 +20,28 @@ func paginate(next http.Handler) http.Handler {
 		if err != nil || limit <= 0 || limit > 100 {
 			limit = 20
 		}
-		ctx := context.WithValue(r.Context(), "pagination", pymwymi.PageOpts{page, limit})
+		ctx := context.WithValue(r.Context(), "pagination", pymwymi.PageOpts{Page: page, Limit: limit})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// so here we are checking the token has been signed by the intended wallet address?
-		name := "test"
-		walletAddress := "test"
-		ctx := context.WithValue(r.Context(), "user", pymwymi.User{Name: name, WalletAddress: walletAddress})
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+func authMiddleware(authService *auth.AuthService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("pymwymi_auth_token")
+			if err != nil {
+				http.Error(w, "Unauthorized: missing auth cookie", http.StatusUnauthorized)
+				return
+			}
+
+			user, authErr := authService.AuthenticateUserToken(cookie.Value)
+			if authErr != nil {
+				http.Error(w, authErr.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "user", user)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }

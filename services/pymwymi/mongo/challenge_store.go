@@ -13,7 +13,7 @@ type ChallengeStore interface {
 	// need some sort of mongo connection here
 	CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error
 	UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error
-	getChallengesByStatus(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts)
+	GetChallengesByStatus(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error)
 }
 
 type Storage struct {
@@ -46,12 +46,12 @@ func (s *Storage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []
 }
 
 // you can submit an empty walletAddress but not an empty status
-func (s *Storage) getChallengesByStatus(
+func (s *Storage) GetChallengesByStatus(
 	ctx context.Context,
 	walletAddress string,
 	status pymwymi.ChallengeStatus,
 	pageOpts pymwymi.PageOpts,
-) (*[]pymwymi.PersistedChallenge, error) {
+) ([]pymwymi.PersistedChallenge, error) {
 	result := []pymwymi.PersistedChallenge{}
 	filter := bson.D{bson.E{Key: "status", Value: status}}
 	if walletAddress != "" {
@@ -63,7 +63,7 @@ func (s *Storage) getChallengesByStatus(
 		return nil, err
 	}
 	cursor.All(ctx, &result)
-	return &result, nil
+	return result, nil
 }
 
 // if you pass 0 for page and limit it will return all
