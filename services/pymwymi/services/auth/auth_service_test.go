@@ -14,7 +14,7 @@ import (
 // returns the current testing context
 type AuthTestSuite struct {
 	suite.Suite
-	authService *AuthService
+	authService *Service
 }
 
 // Make sure that VariableThatShouldStartAtFive is set to five

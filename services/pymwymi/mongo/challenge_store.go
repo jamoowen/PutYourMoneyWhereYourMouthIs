@@ -12,15 +12,15 @@ import (
 type ChallengeStore interface {
 	// need some sort of mongo connection here
 	CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error
-	UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error
-	GetChallengesByStatus(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error)
+	UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error
+	GetChallengesByStatus(ctx context.Context, walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error)
 }
 
 type Storage struct {
 	c *mongo.Collection
 }
 
-func (s *Storage) NewChallengeStore(client *mongo.Client, dbName string) *Storage {
+func NewChallengeStore(client *mongo.Client, dbName string) *Storage {
 	return &Storage{
 		c: client.Database(dbName).Collection("challenges"),
 	}
@@ -31,7 +31,7 @@ func (s *Storage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challe
 	return err
 }
 
-func (s *Storage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error {
+func (s *Storage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return err

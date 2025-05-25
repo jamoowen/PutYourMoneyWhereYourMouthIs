@@ -1,10 +1,15 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -36,7 +41,12 @@ type ChallengeTestSuite struct {
 }
 
 func (suite *ChallengeTestSuite) SetupTest() {
-	s := CreateNewServer()
+	dB := getMockDatabase()
+	cS := challenge.NewChallengeService(dB)
+	bS := &blockchain.Service{}
+	aS := &auth.Service{}
+
+	s := NewServer(cS, bS, aS)
 	suite.server = s
 }
 
@@ -49,6 +59,30 @@ func (s *ChallengeTestSuite) TestCreateChallenge() {
 
 func TestChallengeTestSuite(t *testing.T) {
 	suite.Run(t, new(ChallengeTestSuite))
+}
+
+// CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error
+// UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error
+// GetChallengesByStatus(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error)
+
+func getMockDatabase() *mockDatabase {
+	return &mockDatabase{}
+}
+
+type mockDatabase struct {
+	challenges map[string]pymwymi.PersistedChallenge
+}
+
+func (s *mockDatabase) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error {
+	return nil
+}
+
+func (s *mockDatabase) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
+	return nil
+}
+
+func (s *mockDatabase) GetChallengesByStatus(ctx context.Context, walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error) {
+	return nil, nil
 }
 
 // here i need to implement the interface of my database

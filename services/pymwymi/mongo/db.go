@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -12,6 +13,7 @@ import (
 func ConnectToMongo(mongoURI string) *mongo.Client {
 	// Use the SetServerAPIOptions() method to set the version of the Stable API on the client
 	// Create a new client and connect to the server
+	log.Println("Connecting to MongoDB...", mongoURI)
 	clientOptions := options.Client().
 		ApplyURI(mongoURI).
 		SetMaxPoolSize(50).

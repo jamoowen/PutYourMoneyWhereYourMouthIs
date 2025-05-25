@@ -7,26 +7,24 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/mongo"
 )
 
-type ChallengeService interface {
-	GetChallengesForUser(ctx context.Context, status pymwymi.ChallengeStatus, page int64) ([]pymwymi.Challenge, error)
-}
-
 type Service struct {
 	storage mongo.ChallengeStore
 }
 
-const PAGE_LIMIT = 50
-
-func (s *Service) getChallengesForUser(ctx context.Context, status pymwymi.ChallengeStatus, page int64) ([]pymwymi.Challenge, error) {
-	pageOpts := pymwymi.PageOpts{
-		Page:  page,
-		Limit: PAGE_LIMIT,
+func NewChallengeService(storage mongo.ChallengeStore) *Service {
+	return &Service{
+		storage: storage,
 	}
-	persistedChallenges, err := s.storage.GetChallengesByStatus(pymwymi.GetUserFromCtx(ctx).WalletAddress, status, pageOpts)
+}
+
+func (s *Service) GetChallengesForUser(ctx context.Context, status pymwymi.ChallengeStatus) ([]pymwymi.Challenge, error) {
+	pageOpts := pymwymi.GetPageOptsFromCtx(ctx)
+	walletAddress := pymwymi.GetUserFromCtx(ctx).WalletAddress
+	persistedChallenges, err := s.storage.GetChallengesByStatus(ctx, walletAddress, status, pageOpts)
 	if err != nil {
 		return nil, err
 	}
-	// convert (remove _id and createdAt)
+	// adapt
 	challenges := make([]pymwymi.Challenge, len(persistedChallenges))
 	for i, persistedChallenge := range persistedChallenges {
 		challenges[i] = persistedChallenge.Challenge

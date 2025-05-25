@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -24,16 +25,16 @@ func (e *InvalidAuthError) Error() string {
 	return e.Message
 }
 
-type AuthService struct {
+type Service struct {
 	signingKey    []byte
 	durationValid time.Duration
 }
 
-func GetAuthService(signingKey string, durationValid time.Duration) *AuthService {
+func GetAuthService(signingKey string, durationValid time.Duration) *Service {
 	if signingKey == "" {
 		panic("signingKey is required")
 	}
-	return &AuthService{
+	return &Service{
 		signingKey:    []byte(signingKey),
 		durationValid: durationValid,
 	}
@@ -44,7 +45,7 @@ type userCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (a *AuthService) CreateUserJwt(user pymwymi.User) (string, error) {
+func (a *Service) CreateUserJwt(user pymwymi.User) (string, error) {
 	claims := userCustomClaims{
 		user,
 		jwt.RegisteredClaims{
@@ -53,12 +54,16 @@ func (a *AuthService) CreateUserJwt(user pymwymi.User) (string, error) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(a.signingKey)
+	signedJwt, err := token.SignedString(a.signingKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign jwt: %w", err)
+	}
+	return signedJwt, nil
 }
 
 // dont think im handling erorrs correctly not sure what happens when expired
 // need to just run some tests
-func (a *AuthService) AuthenticateUserToken(tokenString string) (pymwymi.User, *InvalidAuthError) {
+func (a *Service) AuthenticateUserToken(tokenString string) (pymwymi.User, *InvalidAuthError) {
 	var user pymwymi.User
 	token, err := jwt.ParseWithClaims(tokenString, &userCustomClaims{}, func(token *jwt.Token) (any, error) {
 		return a.signingKey, nil

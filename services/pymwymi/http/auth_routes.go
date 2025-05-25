@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -10,11 +9,17 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
 )
 
-func (s *Server) mountAuthRoutes() chi.Router {
+const SIGN_IN_STRING = "sign-in"
+
+func (s *Server) mountAuthRoutes() {
+	prefix := "/auth"
+
 	r := chi.NewRouter()
-	return r
+	r.Post("/", s.authenticate)
+	s.router.Mount(prefix, r)
 }
 
+// accepts walletAddress and sig and responds with a jwt in cookie if successful
 func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	type AuthDTO struct {
 		WalletAddress string `json:"walletAddress"`
@@ -23,25 +28,25 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	var authDTO AuthDTO
 	err := json.NewDecoder(r.Body).Decode(&authDTO)
 	if err != nil {
-		handleHttpError(w, fmt.Errorf("failed to parse body"), http.StatusBadRequest)
+		handleHttpError(w, &HttpError{Error: err, Message: "failed to decode request body", Code: http.StatusBadRequest})
 		return
 	}
 	if authDTO.WalletAddress == "" || authDTO.Sig == "" {
-		handleHttpError(w, fmt.Errorf("walletAddress and sig are required"), http.StatusBadRequest)
+		handleHttpError(w, &HttpError{Error: nil, Message: "walletAddress and sig are required", Code: http.StatusBadRequest})
 		return
 	}
-	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig)
+	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig, SIGN_IN_STRING)
 	if err != nil {
-		handleHttpError(w, err, http.StatusInternalServerError)
+		handleHttpError(w, &HttpError{Error: err, Message: "failed to authenticate signature", Code: http.StatusBadRequest})
 		return
 	}
 	if !isSigValid {
-		handleHttpError(w, fmt.Errorf("signature is invalid"), http.StatusUnauthorized)
+		handleHttpError(w, &HttpError{Error: nil, Message: "invalid signature", Code: http.StatusUnauthorized})
 		return
 	}
 	jwt, err := s.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
 	if err != nil {
-		handleHttpError(w, err, http.StatusInternalServerError)
+		handleHttpError(w, &HttpError{Error: err, Message: "failed to create jwt", Code: http.StatusInternalServerError})
 		return
 	}
 

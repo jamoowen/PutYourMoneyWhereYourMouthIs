@@ -5,19 +5,17 @@ import (
 	"net/http"
 )
 
-func handleHttpError(w http.ResponseWriter, err error, code int) {
-	switch code {
-	case http.StatusBadRequest:
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	case http.StatusNotFound:
-		http.Error(w, err.Error(), http.StatusNotFound)
-	case http.StatusUnauthorized:
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-	case http.StatusForbidden:
-		http.Error(w, err.Error(), http.StatusForbidden)
-	default:
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+type HttpError struct {
+	Error   error
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
 
+func handleHttpError(w http.ResponseWriter, httpError *HttpError) {
+	if httpError.Code >= 500 {
+		log.Println(httpError.Error) // Only log server-side errors
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	} else {
+		http.Error(w, httpError.Message, httpError.Code)
 	}
 }

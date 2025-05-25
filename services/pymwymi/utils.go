@@ -12,6 +12,22 @@ type User struct {
 	WalletAddress string
 }
 
+type FieldToSet struct {
+	Field string
+	Value string
+}
+
+type ctxKey string
+
+const (
+	PaginationKey ctxKey = "pagination"
+	UserKey       ctxKey = "user"
+)
+
 func GetUserFromCtx(ctx context.Context) User {
-	return ctx.Value("user").(User)
+	return ctx.Value(UserKey).(User)
+}
+
+func GetPageOptsFromCtx(ctx context.Context) PageOpts {
+	return ctx.Value(PaginationKey).(PageOpts)
 }

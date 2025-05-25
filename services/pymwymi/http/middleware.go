@@ -9,6 +9,8 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 )
 
+// extracts page and limit from query params and adds to ctx
+// page defaults to 1, limit defaults to 20
 func paginate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
@@ -20,12 +22,12 @@ func paginate(next http.Handler) http.Handler {
 		if err != nil || limit <= 0 || limit > 100 {
 			limit = 20
 		}
-		ctx := context.WithValue(r.Context(), "pagination", pymwymi.PageOpts{Page: page, Limit: limit})
+		ctx := context.WithValue(r.Context(), pymwymi.PaginationKey, pymwymi.PageOpts{Page: page, Limit: limit})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func authMiddleware(authService *auth.AuthService) func(http.Handler) http.Handler {
+func authMiddleware(authService *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("pymwymi_auth_token")
@@ -40,7 +42,7 @@ func authMiddleware(authService *auth.AuthService) func(http.Handler) http.Handl
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), "user", user)
+			ctx := context.WithValue(r.Context(), pymwymi.UserKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
