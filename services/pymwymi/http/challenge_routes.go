@@ -15,7 +15,13 @@ func (s *Server) mountChallengeRoutes() {
 
 	r := chi.NewRouter()
 	r.With(s.authMiddleware).Get("/list", s.handleGetChallenges)
+	r.With(s.authMiddleware).Get("/list", s.handleGetChallenges)
+
 	s.router.Mount(prefix, r)
+}
+
+func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
+	// need to pass from user, participants, name, description, currency, amount, transactionHash,
 }
 
 // must path status as a query param eg /challenge/list?status=1

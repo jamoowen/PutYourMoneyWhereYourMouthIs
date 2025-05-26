@@ -32,6 +32,10 @@ func (s *Service) GetChallengesForUser(ctx context.Context, status pymwymi.Chall
 	return challenges, nil
 }
 
+func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChallengeDto) (pymwymi.Challenge, error) {
+	// so we are passed all the stuff but we need to validate first
+}
+
 // func (s *Service) createChallenge(user) error {
 // 	return s.storage.CreateChallenge(challenge)
 // }

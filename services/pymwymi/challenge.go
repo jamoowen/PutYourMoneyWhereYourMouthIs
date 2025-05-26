@@ -26,6 +26,18 @@ type Player struct {
 	TransactionHash string        `bson:"transactionHash" json:"transactionHash"`
 }
 
+type NewChallengeDto struct {
+	TransactionHash string        `bson:"transactionHash" json:"transactionHash"`
+	Creator         WalletAddress `bson:"creator" json:"creator"`
+	Name            string        `bson:"name" json:"name"`
+	Category        string        `bson:"category" json:"category"`
+	Description     string        `bson:"description" json:"description"`
+	Location        string        `bson:"location" json:"location"`
+	Stake           int           `bson:"stake" json:"stake"`
+	Currency        string        `bson:"currency" json:"currency"`
+	Participants    []Player      `bson:"participants" json:"participants"`
+}
+
 type Challenge struct {
 	TransactionHash string          `bson:"transactionHash" json:"transactionHash"`
 	Creator         WalletAddress   `bson:"creator" json:"creator"`

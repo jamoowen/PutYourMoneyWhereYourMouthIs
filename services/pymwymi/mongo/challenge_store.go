@@ -16,22 +16,22 @@ type ChallengeStore interface {
 	GetChallengesByStatus(ctx context.Context, walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error)
 }
 
-type Storage struct {
+type ChallengeStorage struct {
 	c *mongo.Collection
 }
 
-func NewChallengeStore(client *mongo.Client, dbName string) *Storage {
-	return &Storage{
+func NewChallengeStore(client *mongo.Client, dbName string) *ChallengeStorage {
+	return &ChallengeStorage{
 		c: client.Database(dbName).Collection("challenges"),
 	}
 }
 
-func (s *Storage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error {
+func (s *ChallengeStorage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error {
 	_, err := s.c.InsertOne(ctx, challenge)
 	return err
 }
 
-func (s *Storage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
+func (s *ChallengeStorage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (s *Storage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []
 }
 
 // you can submit an empty walletAddress but not an empty status
-func (s *Storage) GetChallengesByStatus(
+func (s *ChallengeStorage) GetChallengesByStatus(
 	ctx context.Context,
 	walletAddress string,
 	status pymwymi.ChallengeStatus,

@@ -11,11 +11,13 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/user"
 )
 
 type Server struct {
 	router            *chi.Mux
 	authService       *auth.Service
+	userService       *user.Service
 	blockchainService *blockchain.Service
 	challengeService  *challenge.Service
 	authMiddleware    func(http.Handler) http.Handler
@@ -28,10 +30,11 @@ func (s *Server) Start(port string) {
 }
 
 // need auth middleware - get user to sign transaction
-func NewServer(cS *challenge.Service, bS *blockchain.Service, aS *auth.Service) *Server {
+func NewServer(uS *user.Service, cS *challenge.Service, bS *blockchain.Service, aS *auth.Service) *Server {
 	s := &Server{
 		router:            chi.NewRouter(),
 		authService:       aS,
+		userService:       uS,
 		blockchainService: bS,
 		challengeService:  cS,
 		authMiddleware:    authMiddleware(aS),

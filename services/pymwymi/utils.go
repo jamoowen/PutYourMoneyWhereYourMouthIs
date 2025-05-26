@@ -7,11 +7,6 @@ type PageOpts struct {
 	Limit int64
 }
 
-type User struct {
-	Name          string
-	WalletAddress string
-}
-
 type FieldToSet struct {
 	Field string
 	Value string

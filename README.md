@@ -13,4 +13,8 @@ gotestsum
 ## Mobile react-native expo app
 
 
+### testing the backend
+gotestsum --format short-verbose ./services/auth/
+gotestsum --format short-verbose ./...
+
 

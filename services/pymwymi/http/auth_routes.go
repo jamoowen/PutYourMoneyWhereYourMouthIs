@@ -31,10 +31,6 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 		handleHttpError(w, &HttpError{Error: err, Message: "failed to decode request body", Code: http.StatusBadRequest})
 		return
 	}
-	if authDTO.WalletAddress == "" || authDTO.Sig == "" {
-		handleHttpError(w, &HttpError{Error: nil, Message: "walletAddress and sig are required", Code: http.StatusBadRequest})
-		return
-	}
 	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig, SIGN_IN_STRING)
 	if err != nil {
 		handleHttpError(w, &HttpError{Error: err, Message: "failed to authenticate signature", Code: http.StatusBadRequest})
@@ -42,6 +38,12 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 	if !isSigValid {
 		handleHttpError(w, &HttpError{Error: nil, Message: "invalid signature", Code: http.StatusUnauthorized})
+		return
+	}
+	// will create a new user if they dont exist already
+	err = s.userService.CreateUser(r.Context(), authDTO.WalletAddress)
+	if err != nil {
+		handleHttpError(w, &HttpError{Error: err, Message: "failed to create user", Code: http.StatusInternalServerError})
 		return
 	}
 	jwt, err := s.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
