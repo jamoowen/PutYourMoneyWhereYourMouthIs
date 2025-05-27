@@ -33,7 +33,19 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 
 	err := ValidateAll(
 		NewStringValidator("Name", c.Name, CheckMaxChars(c.Name, 50), CheckMinChars(c.Name, 5)),
+		NewStringValidator("Description", c.Description, CheckMaxChars(c.Description, 500), CheckMinChars(c.Description, 5)),
+		NewStringValidator("Currency", c.Currency, CheckMaxChars(c.Currency, 3), CheckMinChars(c.Currency, 3)),
+		NewStringValidator("TransactionHash", c.TransactionHash, CheckMaxChars(c.TransactionHash, 66), CheckMinChars(c.TransactionHash, 66)),
 	)
+	if err != nil {
+		handleHttpError(w, &HttpError{Error: err, Message: "failed to validate request", Code: http.StatusBadRequest})
+		return
+	}
+	// err = s.challengeService.CreateChallenge(r.Context(), c)
+	// if err != nil {
+	// 	handleHttpError(w, &HttpError{Error: err, Message: "failed to create challenge", Code: http.StatusInternalServerError})
+	// 	return
+	// }
 }
 
 // must path status as a query param eg /challenge/list?status=1

@@ -7,15 +7,14 @@ import (
 )
 
 type Validator interface {
-	validate(value any) error
-	value() any
-	fieldName() string
+	validate() error
+	getFieldName() string
 }
 
 func ValidateAll(validators ...Validator) error {
 	for _, v := range validators {
-		if err := v.validate(v.value()); err != nil {
-			return fmt.Errorf("bad input (%s): %w", v.fieldName(), err)
+		if err := v.validate(); err != nil {
+			return fmt.Errorf("bad input (%s): %w", v.getFieldName(), err)
 		}
 	}
 	return nil
@@ -24,19 +23,23 @@ func ValidateAll(validators ...Validator) error {
 type StringValidator struct {
 	fieldName  string
 	value      string
-	validators []func(any) error
+	validators []func(string) error
 }
 
-func NewStringValidator(fieldName string, value any, validators ...func(any) error) *StringValidator {
+func NewStringValidator(fieldName string, value any, validators ...func(string) error) *StringValidator {
 	v := StringValidator{}
 	v.fieldName = fieldName
 	v.validators = validators
 	return &v
 }
 
-func (v *StringValidator) validate(value string) error {
+func (v *StringValidator) getFieldName() string {
+	return v.fieldName
+}
+
+func (v *StringValidator) validate() error {
 	for _, fn := range v.validators {
-		if err := fn(value); err != nil {
+		if err := fn(v.value); err != nil {
 			return err
 		}
 	}
