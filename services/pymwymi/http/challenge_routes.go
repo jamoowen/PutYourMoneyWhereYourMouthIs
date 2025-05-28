@@ -24,18 +24,38 @@ func (s *Server) mountChallengeRoutes() {
 func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 	// need to pass from user, participants, name, description, currency, amount, transactionHash,
 	// 10 Kib
-	r.Body = http.MaxBytesReader(w, r.Body, 10*1024)
+
+	// type NewChallengeDto struct {
+	// 	TransactionHash       string          `json:"transactionHash"`
+	// 	Creator               WalletAddress   `json:"creator"`
+	// 	Name                  string          `json:"name"`
+	// 	Category              string          `json:"category"`
+	// 	Description           string          `json:"description"`
+	// 	Location              string          `json:"location"`
+	// 	Stake                 int             `json:"stake"`
+	// 	Currency              string          `json:"currency"`
+	// 	ParticipantsAddresses []WalletAddress `json:"participantsAddresses"`
+	// }
+
 	var c pymwymi.NewChallengeDto
+	r.Body = http.MaxBytesReader(w, r.Body, 10*1024)
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		handleHttpError(w, &HttpError{Error: err, Message: "failed to decode request body", Code: http.StatusBadRequest})
 		return
 	}
 
+	// light validation
+	// need to manually check that all the participants addresses are valid
+	// need to verify the stake is the correct amount
 	err := ValidateAll(
-		NewStringValidator("Name", c.Name, CheckMaxChars(c.Name, 50), CheckMinChars(c.Name, 5)),
-		NewStringValidator("Description", c.Description, CheckMaxChars(c.Description, 500), CheckMinChars(c.Description, 5)),
-		NewStringValidator("Currency", c.Currency, CheckMaxChars(c.Currency, 3), CheckMinChars(c.Currency, 3)),
-		NewStringValidator("TransactionHash", c.TransactionHash, CheckMaxChars(c.TransactionHash, 66), CheckMinChars(c.TransactionHash, 66)),
+		NewStringValidator("transactionHash", c.TransactionHash, CheckMaxChars(66), CheckMinChars(66)),
+		NewStringValidator("creator", c.Creator, CheckMaxChars(66), CheckMinChars(66)),
+		NewStringValidator("name", c.Name, CheckMaxChars(50), CheckMinChars(5)),
+		NewStringValidator("category", c.Category, CheckMaxChars(50), CheckMinChars(5)),
+		NewStringValidator("description", c.Description, CheckMaxChars(500), CheckMinChars(5)),
+		NewStringValidator("location", c.Location, CheckMaxChars(500), CheckMinChars(5)),
+		NewStringValidator("stake", c.Stake, CheckMaxChars(50), CheckMinChars(5)),
+		NewStringValidator("currency", c.Currency, CheckMaxChars(500), CheckMinChars(5)),
 	)
 	if err != nil {
 		handleHttpError(w, &HttpError{Error: err, Message: "failed to validate request", Code: http.StatusBadRequest})
