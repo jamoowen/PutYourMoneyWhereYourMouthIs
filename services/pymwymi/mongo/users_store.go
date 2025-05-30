@@ -27,7 +27,7 @@ func (s *UsersStorage) CreateUser(ctx context.Context, user *pymwymi.User) error
 	return nil
 }
 
-func (s *UsersStorage) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.PersistedUser, error) {
+func (s *UsersStorage) GetUsersByWalletAddress(ctx context.Context, wallets []string) ([]pymwymi.PersistedUser, error) {
 	var results []pymwymi.PersistedUser
 	filter := bson.D{
 		{Key: "walletAddress", Value: bson.D{

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 )
 
@@ -21,26 +22,38 @@ func (s *Server) mountChallengeRoutes() {
 	s.router.Mount(prefix, r)
 }
 
+var supportedStatuses = []pymwymi.ChallengeStatus{
+	pymwymi.StateCreated,
+	pymwymi.StatePending,
+	pymwymi.StateCancelled,
+	pymwymi.StateCompleted,
+	pymwymi.StateClaimed,
+}
+
+// must path status as a query param eg /challenge/list?status=1
+func (s *Server) handleGetChallenges(w http.ResponseWriter, r *http.Request) {
+	statusStr := r.URL.Query().Get("status")
+	statusInt, err := strconv.Atoi(statusStr)
+	if err != nil {
+		handleHttpError(w, fmt.Errorf("invalid status: %s", statusStr), http.StatusBadRequest)
+		return
+	}
+
+	isSupported := slices.Contains(supportedStatuses, pymwymi.ChallengeStatus(statusInt))
+	if !isSupported {
+		handleHttpError(w, fmt.Errorf("invalid status: %s", statusStr), http.StatusBadRequest)
+		return
+	}
+	s.challengeService.GetChallengesForUser(r.Context(), pymwymi.ChallengeStatus(statusInt))
+}
+
 func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 	// need to pass from user, participants, name, description, currency, amount, transactionHash,
 	// 10 Kib
-
-	// type NewChallengeDto struct {
-	// 	TransactionHash       string          `json:"transactionHash"`
-	// 	Creator               WalletAddress   `json:"creator"`
-	// 	Name                  string          `json:"name"`
-	// 	Category              string          `json:"category"`
-	// 	Description           string          `json:"description"`
-	// 	Location              string          `json:"location"`
-	// 	Stake                 int             `json:"stake"`
-	// 	Currency              string          `json:"currency"`
-	// 	ParticipantsAddresses []WalletAddress `json:"participantsAddresses"`
-	// }
-
 	var c pymwymi.NewChallengeDto
 	r.Body = http.MaxBytesReader(w, r.Body, 10*1024)
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
-		handleHttpError(w, &HttpError{Error: err, Message: "failed to decode request body", Code: http.StatusBadRequest})
+		handleHttpError(w, fmt.Errorf("failed to decode request body: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -58,35 +71,32 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 		NewStringValidator("currency", c.Currency, CheckMaxChars(500), CheckMinChars(5)),
 	)
 	if err != nil {
-		handleHttpError(w, &HttpError{Error: err, Message: "failed to validate request", Code: http.StatusBadRequest})
+		handleHttpError(w, fmt.Errorf("bad input: %w", err), http.StatusBadRequest)
 		return
 	}
-	// err = s.challengeService.CreateChallenge(r.Context(), c)
-	// if err != nil {
-	// 	handleHttpError(w, &HttpError{Error: err, Message: "failed to create challenge", Code: http.StatusInternalServerError})
-	// 	return
-	// }
+
+	challenge, err := s.challengeService.CreateChallenge(r.Context(), c)
+	if err != nil {
+		handleHttpError(w, fmt.Errorf("failed to create challenge: %w", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(challenge)
 }
 
-// must path status as a query param eg /challenge/list?status=1
-func (s *Server) handleGetChallenges(w http.ResponseWriter, r *http.Request) {
-	statusStr := r.URL.Query().Get("status")
-	statusInt, err := strconv.Atoi(statusStr)
+// vote is the wallett address of the player they say won
+func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
+	var voteDTO pymwymi.VoteDTO
+	err := json.NewDecoder(r.Body).Decode(&voteDTO)
 	if err != nil {
-		handleHttpError(w, &HttpError{Error: nil, Message: fmt.Sprintf("invalid status: %s", statusStr), Code: http.StatusBadRequest})
+		handleHttpError(w, fmt.Errorf("failed to decode request body: %w", err), http.StatusBadRequest)
 		return
 	}
-	supportedStatuses := []pymwymi.ChallengeStatus{
-		pymwymi.StateCreated,
-		pymwymi.StatePending,
-		pymwymi.StateCancelled,
-		pymwymi.StateCompleted,
-		pymwymi.StateClaimed,
-	}
-	isSupported := slices.Contains(supportedStatuses, pymwymi.ChallengeStatus(statusInt))
-	if !isSupported {
-		handleHttpError(w, &HttpError{Error: nil, Message: fmt.Sprintf("invalid status: %s", statusStr), Code: http.StatusBadRequest})
+	checkIsInList := IsInList()
+	err = checkIsInList(string(voteDTO.Vote.Status), string(pymwymi.VoteCancel), string(pymwymi.VoteWinner))
+	if err != nil {
+		handleHttpError(w, fmt.Errorf("invalid vote: %w", err), http.StatusBadRequest)
 		return
 	}
-	s.challengeService.GetChallengesForUser(r.Context(), pymwymi.ChallengeStatus(statusInt))
+	w.WriteHeader(http.StatusOK)
 }

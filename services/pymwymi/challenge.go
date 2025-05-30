@@ -17,12 +17,30 @@ const (
 	StateClaimed
 )
 
+type VoteStatus string
+
+const (
+	VoteCancel VoteStatus = "cancel"
+	VoteWinner VoteStatus = "winner"
+)
+
 type WalletAddress string
 
+type Vote struct {
+	Status VoteStatus    `bson:"status" json:"status"`
+	Winner WalletAddress `bson:"winner" json:"winner"`
+}
+
+type VoteDTO struct {
+	ChallengeId string `json:"challengeId"`
+	Vote        Vote   `json:"vote"`
+}
+
 type Player struct {
-	WalletAddress       WalletAddress `bson:"walletAddress" json:"walletAddress"`
-	Vote                string        `bson:"vote" json:"vote"`
-	VoteTransactionHash string        `bson:"voteTransactionHash" json:"voteTransactionHash"`
+	WalletAddress WalletAddress `bson:"walletAddress" json:"walletAddress"`
+	Vote          string        `bson:"vote" json:"vote"`
+	HasStaked     bool          `bson:"hasStaked" json:"hasStaked"`
+	HasWithdrawn  bool          `bson:"hasWithdrawn" json:"hasWithdrawn"`
 }
 
 type NewChallengeDto struct {
@@ -48,7 +66,7 @@ type Challenge struct {
 	Currency        string          `bson:"currency" json:"currency"`
 	Participants    []Player        `bson:"participants" json:"participants"`
 	Status          ChallengeStatus `bson:"status" json:"status"`
-	Winner          string          `bson:"winner" json:"winner"`
+	Winner          WalletAddress   `bson:"winner" json:"winner"`
 }
 
 type PersistedChallenge struct {

@@ -19,7 +19,7 @@ func NewUserService(storage *mongo.UsersStorage) *Service {
 }
 
 func (s *Service) CreateUser(ctx context.Context, walletAddress string) error {
-	persistedUsers, err := s.storage.GetUsers(ctx, []string{walletAddress})
+	persistedUsers, err := s.storage.GetUsersByWalletAddress(ctx, []string{walletAddress})
 	if err != nil {
 		return fmt.Errorf("failed to get create user: %w", err)
 	}
@@ -34,7 +34,7 @@ func (s *Service) CreateUser(ctx context.Context, walletAddress string) error {
 
 func (s *Service) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.User, error) {
 	var users []pymwymi.User
-	persistedUsers, err := s.storage.GetUsers(ctx, wallets)
+	persistedUsers, err := s.storage.GetUsersByWalletAddress(ctx, wallets)
 	if err != nil {
 		return users, err
 	}

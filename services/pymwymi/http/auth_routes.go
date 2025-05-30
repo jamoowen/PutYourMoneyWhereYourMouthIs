@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -28,27 +29,27 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	var authDTO AuthDTO
 	err := json.NewDecoder(r.Body).Decode(&authDTO)
 	if err != nil {
-		handleHttpError(w, &HttpError{Error: err, Message: "failed to decode request body", Code: http.StatusBadRequest})
+		handleHttpError(w, fmt.Errorf("failed to decode request body: %w", err), http.StatusBadRequest)
 		return
 	}
 	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig, SIGN_IN_STRING)
 	if err != nil {
-		handleHttpError(w, &HttpError{Error: err, Message: "failed to authenticate signature", Code: http.StatusBadRequest})
+		handleHttpError(w, fmt.Errorf("failed to verify signature: %w", err), http.StatusBadRequest)
 		return
 	}
 	if !isSigValid {
-		handleHttpError(w, &HttpError{Error: nil, Message: "invalid signature", Code: http.StatusUnauthorized})
+		handleHttpError(w, fmt.Errorf("invalid signature"), http.StatusBadRequest)
 		return
 	}
 	// will create a new user if they dont exist already
 	err = s.userService.CreateUser(r.Context(), authDTO.WalletAddress)
 	if err != nil {
-		handleHttpError(w, &HttpError{Error: err, Message: "failed to create user", Code: http.StatusInternalServerError})
+		handleHttpError(w, fmt.Errorf("failed to create user: %w", err), http.StatusInternalServerError)
 		return
 	}
 	jwt, err := s.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
 	if err != nil {
-		handleHttpError(w, &HttpError{Error: err, Message: "failed to create jwt", Code: http.StatusInternalServerError})
+		handleHttpError(w, fmt.Errorf("failed to create jwt: %w", err), http.StatusInternalServerError)
 		return
 	}
 

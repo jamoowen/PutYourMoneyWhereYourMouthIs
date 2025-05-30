@@ -109,3 +109,16 @@ func IsEmail() func(string) error {
 		return nil
 	}
 }
+
+// Checks if value is a valid email.
+
+func IsInList() func(string, ...string) error {
+	return func(valueToCheck string, values ...string) error {
+		for _, v := range values {
+			if v == valueToCheck {
+				return nil
+			}
+		}
+		return fmt.Errorf("value not included in list of possible values")
+	}
+}
