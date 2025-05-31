@@ -89,14 +89,21 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 	var voteDTO pymwymi.VoteDTO
 	err := json.NewDecoder(r.Body).Decode(&voteDTO)
 	if err != nil {
-		handleHttpError(w, fmt.Errorf("failed to decode request body: %w", err), http.StatusBadRequest)
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "bad request body: %v", err.Error()))
 		return
 	}
-	checkIsInList := IsInList()
-	err = checkIsInList(string(voteDTO.Vote.Status), string(pymwymi.VoteCancel), string(pymwymi.VoteWinner))
+	err = nil
+	switch voteDTO.Vote.Intention {
+	case pymwymi.VoteCancel:
+		err = s.challengeService.SubmitCancelVote(r.Context(), voteDTO.ChallengeId)
+	case pymwymi.VoteWinner:
+		err = nil
+	default:
+		err = pymwymi.Errorf(pymwymi.ErrBadInput, "invalid vote intent: %v", voteDTO.Vote.Intention)
+	}
 	if err != nil {
-		handleHttpError(w, fmt.Errorf("invalid vote: %w", err), http.StatusBadRequest)
+		handlePYMWYMIError(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }

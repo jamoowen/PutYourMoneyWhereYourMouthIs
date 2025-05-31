@@ -17,18 +17,17 @@ const (
 	StateClaimed
 )
 
-type VoteStatus string
+type VoteIntention string
 
 const (
-	VoteCancel VoteStatus = "cancel"
-	VoteWinner VoteStatus = "winner"
+	VotePending VoteIntention = "pending"
+	VoteCancel  VoteIntention = "cancel"
+	VoteWinner  VoteIntention = "winner"
 )
 
-type WalletAddress string
-
 type Vote struct {
-	Status VoteStatus    `bson:"status" json:"status"`
-	Winner WalletAddress `bson:"winner" json:"winner"`
+	Intention VoteIntention `bson:"intention" json:"intention"`
+	Winner    string        `bson:"winner" json:"winner"`
 }
 
 type VoteDTO struct {
@@ -37,13 +36,14 @@ type VoteDTO struct {
 }
 
 type Player struct {
-	WalletAddress WalletAddress `bson:"walletAddress" json:"walletAddress"`
-	Vote          string        `bson:"vote" json:"vote"`
-	HasStaked     bool          `bson:"hasStaked" json:"hasStaked"`
-	HasWithdrawn  bool          `bson:"hasWithdrawn" json:"hasWithdrawn"`
+	WalletAddress string `bson:"walletAddress" json:"walletAddress"`
+	Vote          Vote   `bson:"vote" json:"vote"`
+	HasStaked     bool   `bson:"hasStaked" json:"hasStaked"`
+	HasWithdrawn  bool   `bson:"hasWithdrawn" json:"hasWithdrawn"`
 }
 
 type NewChallengeDto struct {
+	ID                    string   `json:"id"`
 	TransactionHash       string   `json:"transactionHash"`
 	Creator               string   `json:"creator"`
 	Name                  string   `json:"name"`
@@ -56,8 +56,9 @@ type NewChallengeDto struct {
 }
 
 type Challenge struct {
+	ID              string          `bson:"_id" json:"_id"`
 	TransactionHash string          `bson:"transactionHash" json:"transactionHash"`
-	Creator         WalletAddress   `bson:"creator" json:"creator"`
+	Creator         string          `bson:"creator" json:"creator"`
 	Name            string          `bson:"name" json:"name"`
 	Category        string          `bson:"category" json:"category"`
 	Description     string          `bson:"description" json:"description"`
@@ -66,11 +67,10 @@ type Challenge struct {
 	Currency        string          `bson:"currency" json:"currency"`
 	Participants    []Player        `bson:"participants" json:"participants"`
 	Status          ChallengeStatus `bson:"status" json:"status"`
-	Winner          WalletAddress   `bson:"winner" json:"winner"`
+	Winner          string          `bson:"winner" json:"winner"`
 }
 
 type PersistedChallenge struct {
-	ID        string `json:"_id" bson:"_id"`
-	CreatedAt int64  `json:"createdAt" bson:"createdAt"`
+	CreatedAt int64 `json:"createdAt" bson:"createdAt"`
 	Challenge
 }

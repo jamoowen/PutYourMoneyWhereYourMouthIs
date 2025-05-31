@@ -235,6 +235,7 @@ contract ChallengeEscrow is ReentrancyGuard {
         return (p.walletAddress, p.stake, p.hasClaimed);
     }
 
+   // to be called to cleanup  
     function deleteCompletedChallenges() external onlyOwner {
         uint256[] memory completedChallenges = new uint256[](challengeArray.length);
         uint256[] memory challengeArrayCopy = challengeArray;

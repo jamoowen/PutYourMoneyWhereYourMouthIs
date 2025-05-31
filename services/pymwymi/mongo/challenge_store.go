@@ -46,19 +46,19 @@ func (s *ChallengeStorage) UpdateChallenge(ctx context.Context, id string, field
 }
 
 // we need to handle not found and a genuine db error differently
-func (s *ChallengeStorage) GetChallengeByID(ctx context.Context, id string) (*pymwymi.Challenge, error) {
-	var challenge pymwymi.Challenge
+func (s *ChallengeStorage) GetChallengeByID(ctx context.Context, id string) (*pymwymi.PersistedChallenge, *pymwymi.Error) {
+	var challenge pymwymi.PersistedChallenge
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get challenge (%v): %w", id, err)
+		return nil, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
 	}
 	filter := bson.D{bson.E{Key: "_id", Value: objectId}}
 	err = s.c.FindOne(ctx, filter).Decode(&challenge)
 	if err == mongo.ErrNoDocuments {
-		return nil, nil
+		return nil, pymwymi.Errorf(pymwymi.ErrChallengeNotFound, "challenge (%v) not found", id)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get challenge (%v): %w", id, err)
+		return nil, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get challenge (%v): %v", id, err)
 	}
 	return &challenge, nil
 }

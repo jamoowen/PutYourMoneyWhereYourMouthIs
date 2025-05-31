@@ -69,17 +69,42 @@ func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChal
 	return &newChallenge, nil
 }
 
-func (s *Service) SubmitUserVote(ctx context.Context, vote pymwymi.VoteDTO) error {
-	challenge, err := s.challengeStorage.GetChallengeByID(ctx, vote.ChallengeId)
+// once all players have staked, it changes to pending state
+// if all the staked players have voted cancel, we should cancel
+// this is a race condition. we should handle votes in a queue...
+func (s *Service) SubmitVote(ctx context.Context, challengeID string) *pymwymi.Error {
+	challenge, err := s.challengeStorage.GetChallengeByID(ctx, challengeID)
 	if err != nil {
-		return
+		return pymwymi.Errorf(err.Code, "could not submit cancel vote: %v", err)
 	}
-	if challenge == nil {
-		return fmt.Errorf("challenge not found")
+	if challenge.Status != pymwymi.StateCreated && challenge.Status != pymwymi.StatePending {
+		return pymwymi.Errorf(pymwymi.ErrBadInput, "you can only vote on a challenge that is created or pending")
 	}
-	if challenge.Status != pymwymi.StatePending {
-		return fmt.Errorf("challenge is not in pending state")
+	return nil
+}
+
+// we just need to check that all members who have staked have voted
+// if votes are unanimous we can cancel the challenge
+func (s *Service) SubmitCancelVote(ctx context.Context, challenge *pymwymi.PersistedChallenge) *pymwymi.Error {
+	user := pymwymi.GetUserFromCtx(ctx)
+	unanimousVotes := true
+	for _, participant := range challenge.Participants {
+		if !participant.HasStaked {
+			continue
+		}
+		if participant.WalletAddress == user.WalletAddress {
+			participant.Vote.Intention = pymwymi.VoteCancel
+			participant.Vote.Winner = ""
+		} else if participant.Vote.Intention == pymwymi.VoteWinner {
+			unanimousVotes = false
+		}
 	}
+	if unanimousVotes == true {
+		challenge.Status = pymwymi.StateCancelled
+	}
+	// @TODO we should now update the mongo record but also make sure to call the smart contract
+	// would be good to have something like kafka here since we absolutely need to call the sc
+	// perhaps we need another state to indicate that its in the process of being cancelled
 	return nil
 }
 

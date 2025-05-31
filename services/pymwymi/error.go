@@ -1,9 +1,62 @@
 package pymwymi
 
-type ErrorNotFound struct {
+import (
+	"errors"
+	"fmt"
+)
+
+type ErrorCode string
+
+const (
+	ErrChallengeNotFound ErrorCode = "challenge_not_found"
+	ErrBadInput          ErrorCode = "bad_input"
+	ErrInternal          ErrorCode = "internal_error"
+)
+
+// Error represents an application-specific error. Application errors can be
+// unwrapped by the caller to extract out the code & message.
+
+type Error struct {
+	// Machine-readable error code.
+	Code ErrorCode
+
+	// Human-readable error message.
 	Message string
 }
 
-func (e *ErrorNotFound) Error() string {
-	return e.Message
+// Error implements the error interface. Not used by the application otherwise.
+func (e *Error) Error() string {
+	return fmt.Sprintf("pymwymi error: code=%s message=%s", e.Code, e.Message)
+}
+
+// ErrorCode unwraps an application error and returns its code.
+// Non-application errors always return EINTERNAL.
+func GetErrorCode(err error) ErrorCode {
+	var e *Error
+	if err == nil {
+		return ""
+	} else if errors.As(err, &e) {
+		return e.Code
+	}
+	return ErrInternal
+}
+
+// ErrorMessage unwraps an application error and returns its message.
+// Non-application errors always return "Internal error".
+func ErrorMessage(err error) string {
+	var e *Error
+	if err == nil {
+		return ""
+	} else if errors.As(err, &e) {
+		return e.Message
+	}
+	return err.Error()
+}
+
+// Errorf is a helper function to return an Error with a given code and formatted message.
+func Errorf(code ErrorCode, format string, args ...any) *Error {
+	return &Error{
+		Code:    code,
+		Message: fmt.Sprintf(format, args...),
+	}
 }
