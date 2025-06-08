@@ -6,8 +6,11 @@ export default function Page() {
           Put Your Money Where Your Mouth Is
         </h1>
         <p className="text-lg sm:text-xl text-gray-300">
-          1v1 on rust? On the blacktop? No more trusting the other dude (who's ass you're about to whoop)
-          to honor his bet. Blockchain based wagers enable a trustless system, where only a unanimous vote settles the bet. You put your money down at the beginning and only the winner withdraws.
+          1v1 on rust? First to 11 On the blacktop? Saturday morning matchplay?
+          We've all been in the situation where we bet on the game's we play.
+          We have to trust the other player to honor their side of the bet (In the event you whoop their ass).
+          BUT sometimes they dont honor their bet...
+          I for won have not been paid many a time for wagers I have fairly won
         </p>
       </div>
 
@@ -16,7 +19,7 @@ export default function Page() {
         <section className="space-y-4">
           <h2 className="text-2xl sm:text-3xl font-semibold">The Solution</h2>
           <p className="text-gray-400 text-base sm:text-lg">
-            <strong>Put Your Money Where Your Mouth Is</strong> lets you create, accept, and lock in wagers with friends and rivals directly via wallet-to-wallet agreements. It’s trustless, transparent, and enforceable—without a middleman.
+            <strong>Put Your Money Where Your Mouth Is</strong> lets you create, accept, and lock in wagers with friends and rivals using the blockchain to protect and release the wagered funds. It’s trustless, transparent, and prevents dishonest behavior.
           </p>
         </section>
 
@@ -36,7 +39,12 @@ export default function Page() {
               After the event, everyone votes on the outcome.
             </li>
             <li>
-              Funds are only released if all participants vote the same: winner or cancellation.
+              Funds are only released if a unanimous vote is reached.
+            </li>
+            <li className="opacity-50 text-sm">
+              You can keep revoting if you change your mind on the outcome.
+              The absolute worst case scenario is that a unanimous decision is never reached
+              and so the money will remain locked until all players agree on the outcome.
             </li>
           </ul>
         </section>

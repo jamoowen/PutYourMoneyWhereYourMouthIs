@@ -2,10 +2,15 @@
 
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
+/**
+ * @TODO add tabs for wagers - Completed, Invitations, Ongoing, Claimable?
+ * @TODO add new wager button & form 
+ */
 export default function Page() {
   const account = useAccount()
   const { connectors, connect, status, error } = useConnect()
   const { disconnect } = useDisconnect()
+
 
   return (
     <>

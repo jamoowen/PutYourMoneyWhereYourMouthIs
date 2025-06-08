@@ -15,6 +15,10 @@ GO_BINARY=myapp
 # Default target (build everything)
 .DEFAULT_GOAL := help
 
+web-dev: 
+	cd apps/web && npm run dev
+
+
 # ---- BACKEND ----
 # Build all Go services (backend)
 build-backend:
