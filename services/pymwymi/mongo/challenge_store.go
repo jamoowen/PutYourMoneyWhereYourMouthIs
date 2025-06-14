@@ -28,6 +28,34 @@ func (s *ChallengeStorage) CreateChallenge(ctx context.Context, challenge *pymwy
 	return nil
 }
 
+// this has race conditions and is important to only allow a single vote to make it through
+func (s *ChallengeStorage) UpdateChallengeWithVote(ctx context.Context, id string, challenge *pymwymi.Challenge) *pymwymi.Error {
+	objectId, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
+	}
+	validStatuses := []pymwymi.ChallengeStatus{pymwymi.StateCreated, pymwymi.StatePending}
+	filter := bson.D{
+		{Key: "_id", Value: objectId},
+		{Key: "status", Value: bson.D{{Key: "$in", Value: validStatuses}}},
+	}
+	update := bson.D{bson.E{Key: "$set", Value: bson.D{
+		bson.E{Key: "status", Value: challenge.Status},
+		bson.E{Key: "participants", Value: challenge.Participants},
+	}}}
+	result, err := s.c.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to update challenge (%v): %v", id, err)
+	}
+	// at this point we have already verified the challenge exists
+	// if there are no challenges found - its the status part of the filter that isnt matching
+	// ie its not in pending or created state and therefore voting is over
+	if result.MatchedCount == 0 {
+		return pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting in this challenge no longer possible")
+	}
+	return nil
+}
+
 func (s *ChallengeStorage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {

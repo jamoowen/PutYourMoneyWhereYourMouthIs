@@ -33,14 +33,14 @@ func main() {
 	dbName := "pymwymi"
 
 	challengeStorage := mongo.NewChallengeStore(mongoClient, dbName)
-	challengeService := challenge.NewChallengeService(challengeStorage)
+	userStorage := mongo.NewUsersStore(mongoClient, dbName)
+	challengeService := challenge.NewChallengeService(challengeStorage, userStorage)
 
 	blockchainService := blockchain.NewBlockchainService()
 
 	jwtTokenExpiration := time.Hour * 24 * 7
 	authService := auth.GetAuthService(os.Getenv("JWT_SECRET"), jwtTokenExpiration)
 
-	userStorage := mongo.NewUsersStore(mongoClient, dbName)
 	userService := user.NewUserService(userStorage)
 
 	server := http.NewServer(userService, challengeService, blockchainService, authService)

@@ -10,6 +10,8 @@ type ErrorCode string
 const (
 	ErrChallengeNotFound ErrorCode = "challenge_not_found"
 	ErrBadInput          ErrorCode = "bad_input"
+	ErrVotingFinished    ErrorCode = "voting_finished"
+	ErrNotParticipant    ErrorCode = "not_participant"
 	ErrInternal          ErrorCode = "internal_error"
 )
 

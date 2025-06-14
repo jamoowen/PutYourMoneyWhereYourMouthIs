@@ -18,6 +18,7 @@ func (s *Server) mountChallengeRoutes() {
 	r := chi.NewRouter()
 	r.With(s.authMiddleware).Get("/list", s.handleGetChallenges)
 	r.With(s.authMiddleware).Get("/create", s.handleCreateChallenge)
+	r.With(s.authMiddleware).Get("/vote", s.handleVote)
 
 	s.router.Mount(prefix, r)
 }
@@ -92,18 +93,35 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "bad request body: %v", err.Error()))
 		return
 	}
-	err = nil
-	switch voteDTO.Vote.Intention {
-	case pymwymi.VoteCancel:
-		err = s.challengeService.SubmitCancelVote(r.Context(), voteDTO.ChallengeId)
-	case pymwymi.VoteWinner:
-		err = nil
-	default:
-		err = pymwymi.Errorf(pymwymi.ErrBadInput, "invalid vote intent: %v", voteDTO.Vote.Intention)
+	if voteDTO.Vote.Intent != pymwymi.VoteWinner && voteDTO.Vote.Intent != pymwymi.VoteCancel {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid vote intent: %v", voteDTO.Vote.Intent))
+		return
 	}
+
+	ctx := r.Context()
+	user := pymwymi.GetUserFromCtx(ctx)
+
+	challenge, err := s.challengeService.GetChallengeForParticipant(ctx, voteDTO.ChallengeId, user.WalletAddress)
+	if err != nil {
+		handlePYMWYMIError(w, err)
+	}
+
+	validStatuses := []pymwymi.ChallengeStatus{pymwymi.StatePending, pymwymi.StateCreated}
+	if slices.Contains(validStatuses, challenge.Status) {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting no longer possible"))
+	}
+
+	vote := pymwymi.Vote{
+		HasVoted: true,
+		Intent:   voteDTO.Vote.Intent,
+		Winner:   voteDTO.Vote.Winner,
+	}
+
+	err = s.challengeService.SubmitVote(ctx, user, challenge, vote)
 	if err != nil {
 		handlePYMWYMIError(w, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

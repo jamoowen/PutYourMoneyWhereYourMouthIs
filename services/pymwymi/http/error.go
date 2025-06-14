@@ -18,6 +18,10 @@ func handleHttpError(w http.ResponseWriter, err error, code int) {
 
 func handlePYMWYMIError(w http.ResponseWriter, err error) {
 	switch pymwymi.GetErrorCode(err) {
+	case pymwymi.ErrNotParticipant:
+		http.Error(w, pymwymi.ErrorMessage(err), http.StatusBadRequest)
+	case pymwymi.ErrVotingFinished:
+		http.Error(w, pymwymi.ErrorMessage(err), http.StatusBadRequest)
 	case pymwymi.ErrBadInput:
 		http.Error(w, pymwymi.ErrorMessage(err), http.StatusBadRequest)
 	case pymwymi.ErrChallengeNotFound:

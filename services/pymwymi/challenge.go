@@ -17,17 +17,18 @@ const (
 	StateClaimed
 )
 
-type VoteIntention string
+type VoteIntent string
 
 const (
-	VotePending VoteIntention = "pending"
-	VoteCancel  VoteIntention = "cancel"
-	VoteWinner  VoteIntention = "winner"
+	VotePending VoteIntent = "pending"
+	VoteCancel  VoteIntent = "cancel"
+	VoteWinner  VoteIntent = "winner"
 )
 
 type Vote struct {
-	Intention VoteIntention `bson:"intention" json:"intention"`
-	Winner    string        `bson:"winner" json:"winner"`
+	HasVoted bool       `bson:"hasVoted" json:"hasVoted"`
+	Intent   VoteIntent `bson:"intent" json:"intent"`
+	Winner   string     `bson:"winner" json:"winner"`
 }
 
 type VoteDTO struct {
