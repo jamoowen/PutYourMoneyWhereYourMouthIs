@@ -12,6 +12,16 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 )
 
+type VoteDTO struct {
+	ChallengeId string       `json:"challengeId"`
+	Vote        pymwymi.Vote `json:"vote"`
+}
+
+type AcceptDTO struct {
+	ChallengeId    string `json:"challengeId"`
+	StakeSignature string `json:"stakeSignature"`
+}
+
 func (s *Server) mountChallengeRoutes() {
 	prefix := "/challenge"
 
@@ -85,9 +95,47 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(challenge)
 }
 
+// user clicks accept -> signs transaction -> we send transaction sig with challenge id
+// do we need to look up the transaction?
+// this is going to be a lot more complicated than i thought
+// wait does it? the smart contract ensures the amount sent was correct
+// so all i need to do is verify that the transaction went through?
+func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
+	var acceptDTO AcceptDTO
+	err := json.NewDecoder(r.Body).Decode(&acceptDTO)
+	if err != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "bad request body: %v", err.Error()))
+		return
+	}
+
+	ctx := r.Context()
+	user := pymwymi.GetUserFromCtx(ctx)
+
+	challenge, err := s.challengeService.GetChallengeForParticipant(ctx, acceptDTO.ChallengeId, user.WalletAddress)
+	if err != nil {
+		handlePYMWYMIError(w, err)
+	}
+
+	validStatuses := []pymwymi.ChallengeStatus{pymwymi.StatePending, pymwymi.StateCreated}
+	if slices.Contains(validStatuses, challenge.Status) {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting no longer possible"))
+	}
+
+	s.updateChallengeBusy <- true
+	defer func() { <-s.updateChallengeBusy }()
+
+	err = s.challengeService.SubmitVote(ctx, user, challenge, vote)
+	if err != nil {
+		handlePYMWYMIError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // vote is the wallett address of the player they say won
 func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
-	var voteDTO pymwymi.VoteDTO
+	var voteDTO VoteDTO
 	err := json.NewDecoder(r.Body).Decode(&voteDTO)
 	if err != nil {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "bad request body: %v", err.Error()))
@@ -117,6 +165,8 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 		Winner:   voteDTO.Vote.Winner,
 	}
 
+	s.updateChallengeBusy <- true
+	defer func() { <-s.updateChallengeBusy }()
 	err = s.challengeService.SubmitVote(ctx, user, challenge, vote)
 	if err != nil {
 		handlePYMWYMIError(w, err)

@@ -31,11 +31,6 @@ type Vote struct {
 	Winner   string     `bson:"winner" json:"winner"`
 }
 
-type VoteDTO struct {
-	ChallengeId string `json:"challengeId"`
-	Vote        Vote   `json:"vote"`
-}
-
 type Player struct {
 	WalletAddress string `bson:"walletAddress" json:"walletAddress"`
 	Vote          Vote   `bson:"vote" json:"vote"`
