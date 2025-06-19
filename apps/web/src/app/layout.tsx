@@ -7,6 +7,11 @@ import { type ReactNode } from 'react'
 import { cookieToInitialState } from 'wagmi'
 import { getConfig } from '../wagmi'
 import { Providers } from './providers'
+
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
 import Nav from "./nav";
 
 const geistSans = Geist({
@@ -23,6 +28,7 @@ export const metadata: Metadata = {
   title: "Put Your Money Where Your Mouth Is",
   description: "Trustless wagers and betting amongst friends",
 };
+const queryClient = new QueryClient()
 
 export default async function RootLayout({
   children,
@@ -36,15 +42,15 @@ export default async function RootLayout({
   )
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <header className="sticky top-0 z-50 w-full ">
-          <Nav />
-        </header>
         <Providers initialState={initialState}>
-          {children}
+          <main className="flex flex-col items-center h-[100vh] justify-items-center bg-background text-white">
+            <Nav />
+            {children}
+          </main>
         </Providers>
       </body>
     </html>
