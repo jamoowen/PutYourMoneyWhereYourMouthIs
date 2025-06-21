@@ -34,6 +34,7 @@ func GetAuthService(signingKey string, durationValid time.Duration) *Service {
 	if signingKey == "" {
 		panic("signingKey is required")
 	}
+
 	return &Service{
 		signingKey:    []byte(signingKey),
 		durationValid: durationValid,

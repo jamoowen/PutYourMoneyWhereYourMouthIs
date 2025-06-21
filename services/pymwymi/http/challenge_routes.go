@@ -124,12 +124,6 @@ func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
 	s.updateChallengeBusy <- true
 	defer func() { <-s.updateChallengeBusy }()
 
-	err = s.challengeService.SubmitVote(ctx, user, challenge, vote)
-	if err != nil {
-		handlePYMWYMIError(w, err)
-		return
-	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 

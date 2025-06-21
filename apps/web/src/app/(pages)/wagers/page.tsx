@@ -1,19 +1,15 @@
 'use client'
 
-import { WAGERS_ROUTES } from '@/lib/wagers/constants'
+import Button from '@/components/common/button'
+import SignIn from '@/components/sign-in'
 import Link from 'next/link'
 
-/**
- * @TODO add tabs for wagers - Completed, Invitations, Ongoing, Claimable?
- * @TODO add new wager button & form 
- */
 export default function Page() {
-
-
   return (
     <div>
-      wagers...
-
+      You have not used our app before.
+      sign in with your wallet address
+      <SignIn />
     </div>
 
   )

@@ -7,9 +7,9 @@ export default function Page() {
         </h1>
         <p className="text-lg sm:text-xl text-gray-300">
           1v1 on rust? First to 11 On the blacktop? Saturday morning matchplay?
-          We've all been in the situation where we bet on the game's we play.
+          We've all been in the situation where we bet on the games we play.
           We have to trust the other player to honor their side of the bet (In the event you whoop their ass).
-          BUT sometimes they dont honor their bet...
+          BUT sometimes they don&apos;t honor their bet...
           I for won have not been paid many a time for wagers I have fairly won
         </p>
       </div>

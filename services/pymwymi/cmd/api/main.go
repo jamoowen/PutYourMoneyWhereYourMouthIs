@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -22,6 +23,7 @@ func init() {
 }
 
 func main() {
+	fmt.Println("starting up challenge api")
 	// load env vars
 	validateEnvVars(
 		os.Getenv("PORT"),

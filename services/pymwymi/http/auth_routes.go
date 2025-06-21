@@ -10,7 +10,7 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
 )
 
-const SIGN_IN_STRING = "sign-in"
+const signInString = "PYMWYMI sign in"
 
 func (s *Server) mountAuthRoutes() {
 	prefix := "/auth"
@@ -24,7 +24,7 @@ func (s *Server) mountAuthRoutes() {
 func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	type AuthDTO struct {
 		WalletAddress string `json:"walletAddress"`
-		Sig           string `json:"sig"`
+		Signature     string `json:"signature"`
 	}
 	var authDTO AuthDTO
 	err := json.NewDecoder(r.Body).Decode(&authDTO)
@@ -32,7 +32,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 		handleHttpError(w, fmt.Errorf("failed to decode request body: %w", err), http.StatusBadRequest)
 		return
 	}
-	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Sig, SIGN_IN_STRING)
+	isSigValid, err := blockchain.AuthenticateSignature(authDTO.WalletAddress, authDTO.Signature, signInString)
 	if err != nil {
 		handleHttpError(w, fmt.Errorf("failed to verify signature: %w", err), http.StatusBadRequest)
 		return
@@ -53,13 +53,14 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO set secure true?
 	http.SetCookie(w, &http.Cookie{
 		Name:     "pymwymi_auth_token",
 		Value:    jwt,
 		HttpOnly: true,
 		Secure:   false, // only if using HTTPS (which you should in production)
 		Path:     "/",
-		SameSite: http.SameSiteNoneMode, // this a little dodgy might want to changee
+		SameSite: http.SameSiteStrictMode, // will only use cookie if same domain
 	})
 
 	w.WriteHeader(http.StatusOK)
