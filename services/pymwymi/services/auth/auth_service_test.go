@@ -43,8 +43,8 @@ func (s *AuthTestSuite) TestAuthenticateUserToken() {
 	}
 	jwt, err := s.authService.CreateUserJwt(user)
 	assert.Nil(s.T(), err)
-	authenticatedUser, err := s.authService.AuthenticateUserToken(jwt)
-	assert.Nil(s.T(), err)
+	authenticatedUser, authErr := s.authService.AuthenticateUserToken(jwt)
+	assert.Nil(s.T(), authErr)
 	assert.Equal(s.T(), user, authenticatedUser)
 }
 

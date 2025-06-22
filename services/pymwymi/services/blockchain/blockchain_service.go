@@ -2,10 +2,11 @@ package blockchain
 
 import (
 	"encoding/hex"
-	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 )
 
 type BlockchainService interface {
@@ -18,21 +19,32 @@ func NewBlockchainService() *Service {
 	return &Service{}
 }
 
-func AuthenticateSignature(walletAddress string, signatureHex string, originalMessage string) (bool, error) {
-	// 1. get signature bytes
+func AuthenticateSignature(walletAddress string, signatureHex string, originalMessage string) (bool, *pymwymi.Error) {
+	signatureHex = strings.TrimPrefix(signatureHex, "0x")
 	sigBytes, err := hex.DecodeString(signatureHex)
 	if err != nil {
-		return false, fmt.Errorf("failed to decode signature: %w", err)
+		return false, pymwymi.Errorf(pymwymi.ErrBadInput, "failed to decode signature: %s", err.Error())
 	}
-	// 2. recreate pub key from sig
-	pubKeyFromSig, err := crypto.SigToPub(crypto.Keccak256Hash([]byte(originalMessage)).Bytes(), sigBytes)
+	if len(sigBytes) != 65 {
+		return false, pymwymi.Errorf(pymwymi.ErrBadInput, "signature must be 65 bytes long, got %d", len(sigBytes))
+	}
+
+	// ⚠️ Normalize v from [27,28] → [0,1]
+	if sigBytes[64] >= 27 {
+		sigBytes[64] -= 27
+	}
+
+	msgHash := accounts.TextHash([]byte(originalMessage))
+
+	pubKeyFromSig, err := crypto.SigToPub(msgHash, sigBytes)
 	if err != nil {
-		return false, fmt.Errorf("failed to recreate public key from signature: %w", err)
+		return false, pymwymi.Errorf(pymwymi.ErrBadInput, "failed to recreate public key from signature: %s", err.Error())
 	}
-	// 3. check if wallet sent matches the extracted wallet
+
 	walletAddressFromPubKey := crypto.PubkeyToAddress(*pubKeyFromSig).Hex()
 	if !strings.EqualFold(walletAddress, walletAddressFromPubKey) {
 		return false, nil
 	}
+
 	return true, nil
 }

@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 )
 
 type Validator interface {
@@ -14,10 +15,10 @@ type Validator interface {
 	getFieldName() string
 }
 
-func ValidateAll(validators ...Validator) error {
+func ValidateAll(validators ...Validator) *pymwymi.Error {
 	for _, v := range validators {
 		if err := v.validate(); err != nil {
-			return fmt.Errorf("bad input (%s): %w", v.getFieldName(), err)
+			return pymwymi.Errorf(pymwymi.ErrBadInput, "bad input (%s): %w", v.getFieldName(), err)
 		}
 	}
 	return nil

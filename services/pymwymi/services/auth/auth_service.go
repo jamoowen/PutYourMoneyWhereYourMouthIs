@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -46,7 +45,7 @@ type userCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (a *Service) CreateUserJwt(user pymwymi.User) (string, error) {
+func (a *Service) CreateUserJwt(user pymwymi.User) (string, *pymwymi.Error) {
 	claims := userCustomClaims{
 		user,
 		jwt.RegisteredClaims{
@@ -57,7 +56,7 @@ func (a *Service) CreateUserJwt(user pymwymi.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedJwt, err := token.SignedString(a.signingKey)
 	if err != nil {
-		return "", fmt.Errorf("failed to sign jwt: %w", err)
+		return "", pymwymi.Errorf(pymwymi.ErrBadInput, "failed to sign jwt: %w", err)
 	}
 	return signedJwt, nil
 }

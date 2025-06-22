@@ -46,13 +46,13 @@ func (s *Server) handleGetChallenges(w http.ResponseWriter, r *http.Request) {
 	statusStr := r.URL.Query().Get("status")
 	statusInt, err := strconv.Atoi(statusStr)
 	if err != nil {
-		handleHttpError(w, fmt.Errorf("invalid status: %s", statusStr), http.StatusBadRequest)
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", err.Error()), fmt.Sprintf("invalid status: %s", statusStr))
 		return
 	}
 
 	isSupported := slices.Contains(supportedStatuses, pymwymi.ChallengeStatus(statusInt))
 	if !isSupported {
-		handleHttpError(w, fmt.Errorf("invalid status: %s", statusStr), http.StatusBadRequest)
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, ""), fmt.Sprintf("invalid status: %s", statusStr))
 		return
 	}
 	s.challengeService.GetChallengesForUser(r.Context(), pymwymi.ChallengeStatus(statusInt))
@@ -63,8 +63,8 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 	// 10 Kib
 	var c pymwymi.NewChallengeDto
 	r.Body = http.MaxBytesReader(w, r.Body, 10*1024)
-	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
-		handleHttpError(w, fmt.Errorf("failed to decode request body: %w", err), http.StatusBadRequest)
+	if decodeErr := json.NewDecoder(r.Body).Decode(&c); decodeErr != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", decodeErr.Error()), "bad payload")
 		return
 	}
 
@@ -82,13 +82,13 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 		NewStringValidator("currency", c.Currency, CheckMaxChars(500), CheckMinChars(5)),
 	)
 	if err != nil {
-		handleHttpError(w, fmt.Errorf("bad input: %w", err), http.StatusBadRequest)
+		handlePYMWYMIError(w, err, fmt.Sprintf("bad payload: %s", err.Error()))
 		return
 	}
 
 	challenge, err := s.challengeService.CreateChallenge(r.Context(), c)
 	if err != nil {
-		handleHttpError(w, fmt.Errorf("failed to create challenge: %w", err), http.StatusInternalServerError)
+		handlePYMWYMIError(w, err, "failed to create challenge")
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -102,9 +102,9 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 // so all i need to do is verify that the transaction went through?
 func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
 	var acceptDTO AcceptDTO
-	err := json.NewDecoder(r.Body).Decode(&acceptDTO)
-	if err != nil {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "bad request body: %v", err.Error()))
+	decodeErr := json.NewDecoder(r.Body).Decode(&acceptDTO)
+	if decodeErr != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", decodeErr.Error()), "bad payload")
 		return
 	}
 
@@ -113,12 +113,12 @@ func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
 
 	challenge, err := s.challengeService.GetChallengeForParticipant(ctx, acceptDTO.ChallengeId, user.WalletAddress)
 	if err != nil {
-		handlePYMWYMIError(w, err)
+		handlePYMWYMIError(w, err, "failed to get challenge")
 	}
 
 	validStatuses := []pymwymi.ChallengeStatus{pymwymi.StatePending, pymwymi.StateCreated}
 	if slices.Contains(validStatuses, challenge.Status) {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting no longer possible"))
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrVotingFinished, "%s", err.Error()), "voting no longer possible")
 	}
 
 	s.updateChallengeBusy <- true
@@ -130,13 +130,13 @@ func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
 // vote is the wallett address of the player they say won
 func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 	var voteDTO VoteDTO
-	err := json.NewDecoder(r.Body).Decode(&voteDTO)
-	if err != nil {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "bad request body: %v", err.Error()))
+	decodeErr := json.NewDecoder(r.Body).Decode(&voteDTO)
+	if decodeErr != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", decodeErr.Error()), "bad payload")
 		return
 	}
 	if voteDTO.Vote.Intent != pymwymi.VoteWinner && voteDTO.Vote.Intent != pymwymi.VoteCancel {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid vote intent: %v", voteDTO.Vote.Intent))
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, ""), fmt.Sprintf("invalid vote intent: %v", voteDTO.Vote.Intent))
 		return
 	}
 
@@ -145,12 +145,12 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 
 	challenge, err := s.challengeService.GetChallengeForParticipant(ctx, voteDTO.ChallengeId, user.WalletAddress)
 	if err != nil {
-		handlePYMWYMIError(w, err)
+		handlePYMWYMIError(w, err, "failed to get challenge")
 	}
 
 	validStatuses := []pymwymi.ChallengeStatus{pymwymi.StatePending, pymwymi.StateCreated}
 	if slices.Contains(validStatuses, challenge.Status) {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting no longer possible"))
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrVotingFinished, ""), "voting no longer possible")
 	}
 
 	vote := pymwymi.Vote{
@@ -163,7 +163,7 @@ func (s *Server) handleVote(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-s.updateChallengeBusy }()
 	err = s.challengeService.SubmitVote(ctx, user, challenge, vote)
 	if err != nil {
-		handlePYMWYMIError(w, err)
+		handlePYMWYMIError(w, err, "failed to vote")
 		return
 	}
 

@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/mongo"
@@ -18,18 +17,22 @@ func NewUserService(storage *mongo.UsersStorage) *Service {
 	}
 }
 
-func (s *Service) CreateUser(ctx context.Context, walletAddress string) error {
-	persistedUsers, err := s.storage.GetUsersByWalletAddress(ctx, []string{walletAddress})
-	if err != nil {
-		return fmt.Errorf("failed to get create user: %w", err)
+func (s *Service) CreateUser(ctx context.Context, walletAddress string) (pymwymi.User, *pymwymi.Error) {
+	_, err := s.storage.GetUser(ctx, walletAddress)
+	code := pymwymi.GetErrorCode(err)
+	if err != nil && code == pymwymi.ErrUserNotFound {
+		newUser := pymwymi.User{
+			WalletAddress: walletAddress,
+			Name:          pymwymi.DEFAULT_USER_NAME,
+		}
+		err = s.storage.CreateUser(ctx, newUser)
+		return newUser, err
 	}
-	if len(persistedUsers) > 0 {
-		return nil
+
+	if err == nil {
+		return pymwymi.User{}, pymwymi.Errorf(pymwymi.ErrUserAlreadyExists, "failed to create user: user already exists")
 	}
-	return s.storage.CreateUser(ctx, &pymwymi.User{
-		WalletAddress: walletAddress,
-		Name:          pymwymi.DEFAULT_USER_NAME,
-	})
+	return pymwymi.User{}, pymwymi.Errorf(pymwymi.GetErrorCode(err), "failed to create user: %s", err.Error())
 }
 
 func (s *Service) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.User, error) {

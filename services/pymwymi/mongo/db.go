@@ -21,16 +21,14 @@ func ConnectToMongo(mongoURI string) *mongo.Client {
 		// SetMaxConnIdleTime(5 * time.Minute)
 
 	client, err := mongo.Connect(clientOptions)
-
-	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
+	if err != nil {
+		panic(err)
+	}
 
 	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		panic(err)
 	}
+
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 	return client
 }

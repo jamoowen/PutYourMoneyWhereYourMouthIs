@@ -20,16 +20,16 @@ func NewChallengeStore(client *mongo.Client, dbName string) *ChallengeStorage {
 	}
 }
 
-func (s *ChallengeStorage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error {
+func (s *ChallengeStorage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) *pymwymi.Error {
 	_, err := s.c.InsertOne(ctx, challenge)
 	if err != nil {
-		return fmt.Errorf("failed to create challenge: %w", err)
+		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to create challenge: %s", err.Error())
 	}
 	return nil
 }
 
 // this has race conditions and is important to only allow a single vote to make it through
-func (s *ChallengeStorage) UpdateChallengeWithVote(ctx context.Context, id string, challenge *pymwymi.Challenge) *pymwymi.Error {
+func (s *ChallengeStorage) UpdateChallengeWithVote(ctx context.Context, id string, challenge pymwymi.Challenge) *pymwymi.Error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
@@ -74,21 +74,21 @@ func (s *ChallengeStorage) UpdateChallenge(ctx context.Context, id string, field
 }
 
 // we need to handle not found and a genuine db error differently
-func (s *ChallengeStorage) GetChallengeByID(ctx context.Context, id string) (*pymwymi.PersistedChallenge, *pymwymi.Error) {
+func (s *ChallengeStorage) GetChallengeByID(ctx context.Context, id string) (pymwymi.PersistedChallenge, *pymwymi.Error) {
 	var challenge pymwymi.PersistedChallenge
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
+		return challenge, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
 	}
 	filter := bson.D{bson.E{Key: "_id", Value: objectId}}
 	err = s.c.FindOne(ctx, filter).Decode(&challenge)
 	if err == mongo.ErrNoDocuments {
-		return nil, pymwymi.Errorf(pymwymi.ErrChallengeNotFound, "challenge (%v) not found", id)
+		return challenge, pymwymi.Errorf(pymwymi.ErrChallengeNotFound, "challenge (%v) not found", id)
 	}
 	if err != nil {
-		return nil, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get challenge (%v): %v", id, err)
+		return challenge, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get challenge (%v): %v", id, err)
 	}
-	return &challenge, nil
+	return challenge, nil
 }
 
 // you can submit an empty walletAddress but not an empty status

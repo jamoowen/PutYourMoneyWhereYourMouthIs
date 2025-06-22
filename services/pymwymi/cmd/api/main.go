@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -32,6 +33,12 @@ func main() {
 	)
 
 	mongoClient := mongo.ConnectToMongo(os.Getenv("MONGO_URI"))
+	defer func() {
+		if err := mongoClient.Disconnect(context.TODO()); err != nil {
+			log.Println("Mongo disconnect error:", err)
+		}
+	}()
+
 	dbName := "pymwymi"
 
 	challengeStorage := mongo.NewChallengeStore(mongoClient, dbName)

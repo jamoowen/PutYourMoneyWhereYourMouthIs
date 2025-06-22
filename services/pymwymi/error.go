@@ -8,6 +8,9 @@ import (
 type ErrorCode string
 
 const (
+	ErrUserNotFound      ErrorCode = "user_not_found"
+	ErrUserAlreadyExists ErrorCode = "user_already_exists"
+	ErrNotPYMWYMIUser    ErrorCode = "not_pymwymi_user"
 	ErrChallengeNotFound ErrorCode = "challenge_not_found"
 	ErrBadInput          ErrorCode = "bad_input"
 	ErrVotingFinished    ErrorCode = "voting_finished"
@@ -37,7 +40,7 @@ func GetErrorCode(err error) ErrorCode {
 	var e *Error
 	if err == nil {
 		return ""
-	} else if errors.As(err, &e) {
+	} else if errors.As(err, &e) && e != nil {
 		return e.Code
 	}
 	return ErrInternal

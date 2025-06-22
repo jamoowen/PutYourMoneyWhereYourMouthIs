@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
@@ -50,6 +51,14 @@ func NewServer(uS *user.Service, cS *challenge.Service, bS *blockchain.Service, 
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(middleware.AllowContentType("application/json"))
 	s.router.Use(middleware.Timeout(60 * time.Second))
+	s.router.Use(cors.Handler(cors.Options{
+		AllowOriginFunc:  AllowOriginFunc,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 
 	// this adds a paginate key to the ctx
 	// value is a pymwymi.PageOpts
@@ -61,4 +70,11 @@ func NewServer(uS *user.Service, cS *challenge.Service, bS *blockchain.Service, 
 	s.mountChallengeRoutes()
 
 	return s
+}
+
+func AllowOriginFunc(r *http.Request, origin string) bool {
+	if origin == "http://localhost:4000" {
+		return true
+	}
+	return false
 }

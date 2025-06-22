@@ -2,7 +2,6 @@ package challenge
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/mongo"
@@ -28,10 +27,10 @@ func (s *Service) GetChallenge(ctx context.Context, id string) (*pymwymi.Challen
 	return &persistedChallenge.Challenge, nil
 }
 
-func (s *Service) GetChallengeForParticipant(ctx context.Context, id string, walletAddress string) (*pymwymi.Challenge, error) {
+func (s *Service) GetChallengeForParticipant(ctx context.Context, id string, walletAddress string) (pymwymi.Challenge, *pymwymi.Error) {
 	persistedChallenge, err := s.challengeStorage.GetChallengeByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return pymwymi.Challenge{}, err
 	}
 	isParticipant := false
 	for _, participant := range persistedChallenge.Participants {
@@ -41,9 +40,9 @@ func (s *Service) GetChallengeForParticipant(ctx context.Context, id string, wal
 		}
 	}
 	if isParticipant == false {
-		return nil, pymwymi.Errorf(pymwymi.ErrNotParticipant, "not a participant in this challenge")
+		return pymwymi.Challenge{}, pymwymi.Errorf(pymwymi.ErrNotParticipant, "not a participant in this challenge")
 	}
-	return &persistedChallenge.Challenge, nil
+	return persistedChallenge.Challenge, nil
 }
 
 func (s *Service) GetChallengesForUser(ctx context.Context, status pymwymi.ChallengeStatus) ([]pymwymi.Challenge, error) {
@@ -61,14 +60,14 @@ func (s *Service) GetChallengesForUser(ctx context.Context, status pymwymi.Chall
 	return challenges, nil
 }
 
-func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChallengeDto) (*pymwymi.Challenge, error) {
+func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChallengeDto) (pymwymi.Challenge, *pymwymi.Error) {
 	// so we are passed all the stuff but we need to validate first
 	users, err := s.userStorage.GetUsersByWalletAddress(ctx, challenge.ParticipantsAddresses)
 	if err != nil {
-		return nil, err
+		return pymwymi.Challenge{}, err
 	}
 	if len(users) != len(challenge.ParticipantsAddresses) {
-		return nil, fmt.Errorf("all participants must have signed into pymwymi before creating a challenge")
+		return pymwymi.Challenge{}, pymwymi.Errorf(pymwymi.ErrNotPYMWYMIUser, "not all participants are PYMWYMI users")
 	}
 	var participants []pymwymi.Player
 	for _, participant := range users {
@@ -90,9 +89,9 @@ func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChal
 	}
 	err = s.challengeStorage.CreateChallenge(ctx, &newChallenge)
 	if err != nil {
-		return nil, fmt.Errorf("could not create challenge: %w", err)
+		return pymwymi.Challenge{}, err
 	}
-	return &newChallenge, nil
+	return newChallenge, nil
 }
 
 // // once all players have staked, it changes to pending state
@@ -113,7 +112,7 @@ func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChal
 // if nobody accepts then the creator should be allowed to cancel
 // if votes are unanimous we can cancel the challenge
 // we are handling race condtions in the mongo operation
-func (s *Service) SubmitVote(ctx context.Context, user pymwymi.User, challenge *pymwymi.Challenge, vote pymwymi.Vote) error {
+func (s *Service) SubmitVote(ctx context.Context, user pymwymi.User, challenge pymwymi.Challenge, vote pymwymi.Vote) *pymwymi.Error {
 	unanimousVotes := true
 	for i, participant := range challenge.Participants {
 		if !participant.HasStaked {
