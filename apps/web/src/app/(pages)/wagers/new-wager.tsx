@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import Button from '@/components/common/button'
 import { categories } from '@/lib/categories'  // Your categories array here
+import Image from 'next/image'
 
 // Create Zod enum dynamically from categories array
 const categoryEnum = z.enum(categories)
@@ -18,12 +19,13 @@ const ethAddress = z
   .refine((val) => val.startsWith('0x'), 'Address must start with 0x')
 
 export const newChallengeSchema = z.object({
-  name: z.string().min(1, 'Required'),
+  name: z.string().min(1, 'We need to call this challenge something???').max(50, `That name is long af, chill.`),
   category: categoryEnum,
-  description: z.string().min(1, 'Required'),
-  location: z.string().min(1, 'Required'),
-  stake: z.string().min(1, 'Required'),
-  currency: z.string().min(1, 'Required'),
+  description: z.string().max(500, `Chill, thats enough info`),
+  location: z.string().min(1, 'Required').max(50, `Theres no ways thats a real place bro`),
+  stake: z.number().min(1, 'Required').max(1_000_000, `You're not that rich. Be real`),
+  currency: z.literal('USDC'),
+  chain: z.literal('Base'),
   participantsAddresses: z
     .array(ethAddress)
     .min(1, 'At least one participant')
@@ -48,7 +50,8 @@ export default function NewWager() {
       description: '',
       location: '',
       stake: '',
-      currency: '',
+      currency: 'USDC',
+      chain: "Base",
       participantsAddresses: [''], // One participant by default
     },
   })
@@ -90,7 +93,7 @@ export default function NewWager() {
 
       {isOpen && (
         <dialog id="new_wager_modal" className="modal modal-open">
-  <div className="modal-box max-h-[80vh] overflow-y-auto">
+          <div className="modal-box max-h-[80vh] overflow-y-auto">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Name */}
               <div>
@@ -100,7 +103,7 @@ export default function NewWager() {
                 <input
                   id="name"
                   {...register('name')}
-                  placeholder="Wager name"
+                  placeholder="The Thriller in Manila"
                   className="input input-bordered w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1 mb-3">
@@ -148,13 +151,12 @@ export default function NewWager() {
                   className="textarea textarea-bordered w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1 mb-3">
-                  Provide a detailed description of the wager.
+                  An optional description for your wager. Maybe set some rules?
                 </p>
                 {errors.description && (
                   <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
                 )}
               </div>
-
               {/* Location */}
               <div>
                 <label htmlFor="location" className="block  mb-1">
@@ -167,7 +169,7 @@ export default function NewWager() {
                   className="input input-bordered w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1 mb-3">
-                  Specify the location where this wager applies.
+                  An optional location. Helps us see where the hell all of you are challenging eachother.
                 </p>
                 {errors.location && (
                   <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
@@ -186,32 +188,57 @@ export default function NewWager() {
                   className="input input-bordered w-full"
                 />
                 <p className="text-sm text-gray-500 mt-1 mb-3">
-                  Define the stake amount for the wager.
+                  How much we putting down???
                 </p>
                 {errors.stake && (
                   <p className="text-red-500 text-sm mt-1">{errors.stake.message}</p>
                 )}
               </div>
 
-              {/* Currency */}
+              {/* Currency Picker */}
               <div>
-                <label htmlFor="currency" className="block  mb-1">
+                <label htmlFor="currency" className="block mb-1 font-medium text-sm text-gray-700">
                   Currency
                 </label>
-                <input
-                  id="currency"
-                  {...register('currency')}
-                  placeholder="Currency"
-                  className="input input-bordered w-full"
-                />
-                <p className="text-sm text-gray-500 mt-1 mb-3">
-                  Specify the currency for the stake (e.g., ETH, USD).
-                </p>
+                <div className="relative">
+                  <select
+                    id="currency"
+                    {...register('currency')}
+                    className="select select-bordered w-full pl-10 cursor-not-allowed bg-gray-100 text-gray-700"
+                    defaultValue="USDC"
+                    disabled
+                  >
+                    <option value="USDC">USDC</option>
+                  </select>
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Image src="/usdc.png" alt="USDC" width={20} height={20} />
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1 mb-3">USDC is the fixed currency for this wager.</p>
                 {errors.currency && (
                   <p className="text-red-500 text-sm mt-1">{errors.currency.message}</p>
                 )}
               </div>
 
+              {/* Chain Picker */}
+              <div>
+                <label htmlFor="chain" className="block mb-1 font-medium text-sm text-gray-700">
+                  Chain
+                </label>
+                <select
+                  id="chain"
+                  {...register('chain')}
+                  className="select select-bordered w-full cursor-not-allowed bg-gray-100 text-gray-700"
+                  defaultValue="Base"
+                  disabled
+                >
+                  <option value="Base">Base</option>
+                </select>
+                <p className="text-sm text-gray-500 mt-1 mb-3">This wager will be deployed on the Base chain.</p>
+                {errors.chain && (
+                  <p className="text-red-500 text-sm mt-1">{errors.chain.message}</p>
+                )}
+              </div>
               {/* Participants */}
               <div>
                 <div className="flex justify-between items-center mb-2">
