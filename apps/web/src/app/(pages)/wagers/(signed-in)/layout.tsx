@@ -3,6 +3,7 @@
 import { useSelectedLayoutSegment } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils' // optional utility for conditional classes
+import NewWager from '../new-wager'
 
 const WAGERS_ROUTES = [
   { href: '/wagers/pending', label: 'In Progress' },
@@ -21,6 +22,9 @@ export default function WagersLayout({
 
   return (
     <div className='w-full flex flex-col max-w-[500px] items-center'>
+      <div className='w-full '>
+        <NewWager />
+      </div>
       <div className="tabs justify-between w-full tabs-border mb-4">
         {WAGERS_ROUTES.map((route) => {
           const path = route.href.split('/').pop()

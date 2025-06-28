@@ -19,10 +19,9 @@ web-dev:
 	cd apps/web && npm run dev
 
 
-# Run all Go services (backend)
 run-challenge-api:
 	@echo "Running challenge api..."
-	$(GO_CMD) run  ./$(SERVICES_DIR)/$(CHALLENGE_API_NAME)/cmd/api/main.go
+	cd $(SERVICES_DIR)/$(CHALLENGE_API_NAME) && $(GO_CMD) run ./cmd/api
 
 # ---- DOCKER ----
 # Build Docker images for backend services

@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import Notifications from '@/components/notifications'
-import { ConnectWalletOrShowConnected } from '@/components/connect-wallet'
+import SignIn from '@/components/sign-in'
+import UserAccount from '@/components/user-profile'
 
-export default function Nav() {
+export default async function Nav() {
+
   return (
     <nav className="sticky top-0 z-50 w-full  mb-4 border-b shadow-sm">
       <div className="navbar shadow-sm">
@@ -22,8 +24,7 @@ export default function Nav() {
           {/* </div> */}
         </div>
         <div className="navbar-end">
-          <ConnectWalletOrShowConnected />
-          <Notifications />
+          <UserAccount />
         </div>
       </div>
     </nav >

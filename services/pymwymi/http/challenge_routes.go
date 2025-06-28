@@ -22,6 +22,17 @@ type AcceptDTO struct {
 	StakeSignature string `json:"stakeSignature"`
 }
 
+type NewChallengeDto struct {
+	TransactionHash       string   `json:"transactionHash"`
+	Name                  string   `json:"name"`
+	Category              string   `json:"category"`
+	Description           string   `json:"description"`
+	Location              string   `json:"location"`
+	Stake                 string   `json:"stake"`
+	Currency              string   `json:"currency"`
+	ParticipantsAddresses []string `json:"participantsAddresses"`
+}
+
 func (s *Server) mountChallengeRoutes() {
 	prefix := "/challenge"
 
@@ -61,7 +72,8 @@ func (s *Server) handleGetChallenges(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 	// need to pass from user, participants, name, description, currency, amount, transactionHash,
 	// 10 Kib
-	var c pymwymi.NewChallengeDto
+	var c NewChallengeDto
+
 	r.Body = http.MaxBytesReader(w, r.Body, 10*1024)
 	if decodeErr := json.NewDecoder(r.Body).Decode(&c); decodeErr != nil {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", decodeErr.Error()), "bad payload")
@@ -73,7 +85,6 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 	// need to verify the stake is the correct amount
 	err := ValidateAll(
 		NewStringValidator("transactionHash", c.TransactionHash, CheckMaxChars(66), CheckMinChars(66)),
-		NewStringValidator("creator", c.Creator, CheckMaxChars(66), CheckMinChars(66)),
 		NewStringValidator("name", c.Name, CheckMaxChars(50), CheckMinChars(5)),
 		NewStringValidator("category", c.Category, CheckMaxChars(50), CheckMinChars(5)),
 		NewStringValidator("description", c.Description, CheckMaxChars(500), CheckMinChars(5)),
@@ -86,7 +97,16 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	challenge, err := s.challengeService.CreateChallenge(r.Context(), c)
+	challenge, err := s.challengeService.CreateChallenge(r.Context(),
+		c.TransactionHash,
+		c.Name,
+		c.Category,
+		c.Description,
+		c.Location,
+		c.Stake,
+		c.Currency,
+		c.ParticipantsAddresses,
+	)
 	if err != nil {
 		handlePYMWYMIError(w, err, "failed to create challenge")
 		return

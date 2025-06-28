@@ -60,13 +60,22 @@ func (s *Service) GetChallengesForUser(ctx context.Context, status pymwymi.Chall
 	return challenges, nil
 }
 
-func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChallengeDto) (pymwymi.Challenge, *pymwymi.Error) {
-	// so we are passed all the stuff but we need to validate first
-	users, err := s.userStorage.GetUsersByWalletAddress(ctx, challenge.ParticipantsAddresses)
+func (s *Service) CreateChallenge(ctx context.Context,
+	transactionHash,
+	name,
+	category,
+	description,
+	location,
+	stake,
+	currency string,
+	participantsWalletAddresses []string,
+) (pymwymi.Challenge, *pymwymi.Error) {
+	creator := pymwymi.GetUserFromCtx(ctx).WalletAddress
+	users, err := s.userStorage.GetUsersByWalletAddress(ctx, participantsWalletAddresses)
 	if err != nil {
 		return pymwymi.Challenge{}, err
 	}
-	if len(users) != len(challenge.ParticipantsAddresses) {
+	if len(users) != len(participantsWalletAddresses) {
 		return pymwymi.Challenge{}, pymwymi.Errorf(pymwymi.ErrNotPYMWYMIUser, "not all participants are PYMWYMI users")
 	}
 	var participants []pymwymi.Player
@@ -76,14 +85,14 @@ func (s *Service) CreateChallenge(ctx context.Context, challenge pymwymi.NewChal
 		})
 	}
 	newChallenge := pymwymi.Challenge{
-		TransactionHash: challenge.TransactionHash,
-		Creator:         challenge.Creator,
-		Name:            challenge.Name,
-		Category:        challenge.Category,
-		Description:     challenge.Description,
-		Location:        challenge.Location,
-		Stake:           challenge.Stake,
-		Currency:        challenge.Currency,
+		TransactionHash: transactionHash,
+		Creator:         creator,
+		Name:            name,
+		Category:        category,
+		Description:     description,
+		Location:        location,
+		Stake:           stake,
+		Currency:        currency,
 		Participants:    participants,
 		Status:          pymwymi.StatePending,
 	}

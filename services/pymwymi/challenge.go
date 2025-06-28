@@ -38,19 +38,6 @@ type Player struct {
 	HasWithdrawn  bool   `bson:"hasWithdrawn" json:"hasWithdrawn"`
 }
 
-type NewChallengeDto struct {
-	ID                    string   `json:"id"`
-	TransactionHash       string   `json:"transactionHash"`
-	Creator               string   `json:"creator"`
-	Name                  string   `json:"name"`
-	Category              string   `json:"category"`
-	Description           string   `json:"description"`
-	Location              string   `json:"location"`
-	Stake                 string   `json:"stake"`
-	Currency              string   `json:"currency"`
-	ParticipantsAddresses []string `json:"participantsAddresses"`
-}
-
 type Challenge struct {
 	ID              string          `bson:"_id" json:"_id"`
 	TransactionHash string          `bson:"transactionHash" json:"transactionHash"`

@@ -8,15 +8,19 @@ type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'none'
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   className?: string
+  isLoading?: boolean
+  isDisabled?: boolean
 }
 
 export default function Button({
   variant = 'primary',
   className,
+  isLoading,
+  isDisabled,
   children,
   ...props
 }: ButtonProps) {
-  const base = 'flex items-center gap-2 px-5 py-2 rounded-2xl font-medium transition-all duration-200 cursor-pointer'
+  const base = 'flex items-center gap-2 px-5 py-2 rounded-lg font-medium transition-all duration-200 cursor-pointer'
 
   const variants: Record<Variant, string> = {
     none: '',
@@ -28,10 +32,15 @@ export default function Button({
 
   return (
     <button
+      disabled={isLoading || isDisabled}
       className={cn(base, variants[variant], className)}
       {...props}
     >
-      {children}
+      {isLoading ? <>
+        <span className="loading loading-spinner"></span>
+        loading
+      </>
+        : children}
     </button>
   )
 }
