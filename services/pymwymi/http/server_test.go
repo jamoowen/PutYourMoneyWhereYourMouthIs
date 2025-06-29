@@ -10,7 +10,7 @@ package http
 // 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 // 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 // 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
-// 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
+// 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/wager"
 // 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/user"
 // 	"github.com/stretchr/testify/require"
 // 	"github.com/stretchr/testify/suite"
@@ -37,15 +37,15 @@ package http
 //
 // // Define the suite, and absorb the built-in basic suite
 // // functionality from testify - including assertion methods.
-// type ChallengeTestSuite struct {
+// type WagerTestSuite struct {
 // 	suite.Suite
 // 	server *Server
 // }
 //
-// func (suite *ChallengeTestSuite) SetupTest() {
+// func (suite *WagerTestSuite) SetupTest() {
 // 	dB := getMockDatabase()
-// 	challengeDb:=
-// 	cS := challenge.NewChallengeService(dB)
+// 	wagerDb:=
+// 	cS := wager.NewWagerService(dB)
 // 	bS := &blockchain.Service{}
 // 	aS := &auth.Service{}
 // 	uS := &user.NewUserService()
@@ -54,38 +54,38 @@ package http
 // 	suite.server = s
 // }
 //
-// func (s *ChallengeTestSuite) TestCreateChallenge() {
-// 	req, _ := http.NewRequest("POST", "/challenge", nil)
+// func (s *WagerTestSuite) TestCreateWager() {
+// 	req, _ := http.NewRequest("POST", "/wager", nil)
 // 	response := executeRequest(req, s.server)
 // 	checkResponseCode(s.T(), http.StatusCreated, response.Code)
-// 	require.Equal(s.T(), "Challenge created", response.Body.String())
+// 	require.Equal(s.T(), "Wager created", response.Body.String())
 // }
 //
-// func TestChallengeTestSuite(t *testing.T) {
-// 	suite.Run(t, new(ChallengeTestSuite))
+// func TestWagerTestSuite(t *testing.T) {
+// 	suite.Run(t, new(WagerTestSuite))
 // }
 //
-// // CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error
-// // UpdateChallenge(ctx context.Context, id string, fieldsToSet []MongoField) error
-// // GetChallengesByStatus(walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error)
+// // CreateWager(ctx context.Context, wager *pymwymi.Wager) error
+// // UpdateWager(ctx context.Context, id string, fieldsToSet []MongoField) error
+// // GetWagersByStatus(walletAddress string, status pymwymi.WagerStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedWager, error)
 //
 // func getMockDatabase() *mockDatabase {
 // 	return &mockDatabase{}
 // }
 //
 // type mockDatabase struct {
-// 	challenges map[string]pymwymi.PersistedChallenge
+// 	wagers map[string]pymwymi.PersistedWager
 // }
 //
-// func (s *mockDatabase) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) error {
+// func (s *mockDatabase) CreateWager(ctx context.Context, wager *pymwymi.Wager) error {
 // 	return nil
 // }
 //
-// func (s *mockDatabase) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
+// func (s *mockDatabase) UpdateWager(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
 // 	return nil
 // }
 //
-// func (s *mockDatabase) GetChallengesByStatus(ctx context.Context, walletAddress string, status pymwymi.ChallengeStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedChallenge, error) {
+// func (s *mockDatabase) GetWagersByStatus(ctx context.Context, walletAddress string, status pymwymi.WagerStatus, pageOpts pymwymi.PageOpts) ([]pymwymi.PersistedWager, error) {
 // 	return nil, nil
 // }
 //

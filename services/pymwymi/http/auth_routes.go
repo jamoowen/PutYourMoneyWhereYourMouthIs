@@ -22,6 +22,10 @@ type AuthDTO struct {
 	Signature     string `json:"signature"`
 }
 
+type ChangeNameDTO struct {
+	Name string `json:"name"`
+}
+
 type AuthResponse struct {
 	AuthCode AuthResponseCode `json:"authCode"`
 }
@@ -31,6 +35,7 @@ func (s *Server) mountAuthRoutes() {
 
 	r := chi.NewRouter()
 	r.Post("/", s.authenticate)
+	r.Patch("/", s.updateName)
 	s.router.Mount(prefix, r)
 }
 
@@ -55,20 +60,69 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// will create a new user if they dont exist already
-	_, err = s.userService.CreateUser(r.Context(), authDTO.WalletAddress)
-	errCode := pymwymi.GetErrorCode(err)
-	if err != nil && errCode != pymwymi.ErrUserAlreadyExists {
+
+	ctx := r.Context()
+
+	var user pymwymi.User
+	existingUser, err := s.userService.GetUser(ctx, authDTO.WalletAddress)
+	if err != nil && err.Code != pymwymi.ErrUserNotFound {
 		handlePYMWYMIError(w, err, "failed to authenticate")
 		return
 	}
-	if errCode == pymwymi.ErrUserAlreadyExists {
-		authResponseCode = authResponseSignedIn
-	}
-	if err == nil {
+	if err != nil && err.Code == pymwymi.ErrUserNotFound {
+		newUser, err := s.userService.CreateUser(ctx, authDTO.WalletAddress)
+		if err != nil {
+			handlePYMWYMIError(w, err, "failed to authenticate")
+			return
+		}
+		user = newUser
 		authResponseCode = authResponseSignedUp
 	}
+	if err == nil {
+		user.Name = existingUser.Name
+		user.WalletAddress = existingUser.WalletAddress
+		authResponseCode = authResponseSignedIn
+	}
 
-	jwt, err := s.authService.CreateUserJwt(pymwymi.User{WalletAddress: authDTO.WalletAddress})
+	jwt, err := s.authService.CreateUserJwt(user)
+	if err != nil {
+		handlePYMWYMIError(w, err, "failed to authenticate")
+		return
+	}
+
+	// TODO set secure true?
+	http.SetCookie(w, &http.Cookie{
+		Name:     "pymwymi_auth_token",
+		Value:    jwt,
+		HttpOnly: true,
+		Secure:   false, // only if using HTTPS (which you should in production)
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode, // will only use cookie if same domain
+	})
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(AuthResponse{AuthCode: authResponseCode})
+}
+
+func (s *Server) updateName(w http.ResponseWriter, r *http.Request) {
+	var authResponseCode AuthResponseCode
+	var changeNameDTO ChangeNameDTO
+	decodeErr := json.NewDecoder(r.Body).Decode(&changeNameDTO)
+	if decodeErr != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", decodeErr.Error()), "bad payload")
+		return
+	}
+
+	ctx := r.Context()
+	user := pymwymi.GetUserFromCtx(ctx)
+
+	updatedUser, err := s.userService.UpdateName(ctx, changeNameDTO.Name, user.WalletAddress)
+	if err != nil {
+		handlePYMWYMIError(w, err, "failed to update name")
+		return
+	}
+
+	jwt, err := s.authService.CreateUserJwt(updatedUser)
 	if err != nil {
 		handlePYMWYMIError(w, err, "failed to authenticate")
 		return

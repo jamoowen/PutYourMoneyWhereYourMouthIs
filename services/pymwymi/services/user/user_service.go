@@ -18,21 +18,24 @@ func NewUserService(storage *mongo.UsersStorage) *Service {
 }
 
 func (s *Service) CreateUser(ctx context.Context, walletAddress string) (pymwymi.User, *pymwymi.Error) {
-	_, err := s.storage.GetUser(ctx, walletAddress)
-	code := pymwymi.GetErrorCode(err)
-	if err != nil && code == pymwymi.ErrUserNotFound {
-		newUser := pymwymi.User{
-			WalletAddress: walletAddress,
-			Name:          pymwymi.DEFAULT_USER_NAME,
-		}
-		err = s.storage.CreateUser(ctx, newUser)
-		return newUser, err
+	newUser := pymwymi.User{
+		WalletAddress: walletAddress,
+		Name:          pymwymi.DEFAULT_USER_NAME,
 	}
+	err := s.storage.CreateUser(ctx, newUser)
 
 	if err == nil {
 		return pymwymi.User{}, pymwymi.Errorf(pymwymi.ErrUserAlreadyExists, "failed to create user: user already exists")
 	}
 	return pymwymi.User{}, pymwymi.Errorf(pymwymi.GetErrorCode(err), "failed to create user: %s", err.Error())
+}
+
+func (s *Service) GetUser(ctx context.Context, walletAddress string) (pymwymi.User, *pymwymi.Error) {
+	user, err := s.storage.GetUser(ctx, walletAddress)
+	if err != nil {
+		return pymwymi.User{}, pymwymi.Errorf(err.Code, "failed to get user: %s", err.Error())
+	}
+	return user.User, nil
 }
 
 func (s *Service) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.User, error) {
@@ -47,12 +50,10 @@ func (s *Service) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.Use
 	return users, nil
 }
 
-func (s *Service) UpdateUserName(ctx context.Context, id string, name string) error {
-	fieldsToSet := []pymwymi.FieldToSet{
-		{
-			Field: "name",
-			Value: name,
-		},
+func (s *Service) UpdateName(ctx context.Context, newName string, walletAddress string) (pymwymi.User, *pymwymi.Error) {
+	updatedUser, err := s.storage.UpdateName(ctx, newName, walletAddress)
+	if err != nil {
+		return pymwymi.User{}, pymwymi.Errorf(err.Code, "failed to update user name: %s", err.Error())
 	}
-	return s.storage.UpdateUser(ctx, id, fieldsToSet)
+	return updatedUser.User, nil
 }

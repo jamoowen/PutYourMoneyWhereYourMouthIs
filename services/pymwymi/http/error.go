@@ -31,7 +31,7 @@ func handlePYMWYMIError(w http.ResponseWriter, err *pymwymi.Error, msg string) {
 		})
 
 	case pymwymi.ErrUserNotFound,
-		pymwymi.ErrChallengeNotFound:
+		pymwymi.ErrWagerNotFound:
 		log.Printf("%s: %s", msg, pymwymi.ErrorMessage(err))
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(ErrorResponse{

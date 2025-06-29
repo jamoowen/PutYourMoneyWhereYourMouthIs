@@ -2,11 +2,11 @@ package mongo
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type UsersStorage struct {
@@ -36,10 +36,10 @@ func (s *UsersStorage) GetUsersByWalletAddress(ctx context.Context, wallets []st
 	}
 	cursor, err := s.c.Find(ctx, filter)
 	if err != nil {
-		return results, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get users (%v): %s", wallets, err.Error())
+		return results, pymwymi.Errorf(pymwymi.ErrInternal, "%s", err.Error())
 	}
 	if err = cursor.All(context.TODO(), &results); err != nil {
-		return results, pymwymi.Errorf(pymwymi.ErrInternal, "failed to decode users (%v): %s", wallets, err.Error())
+		return results, pymwymi.Errorf(pymwymi.ErrInternal, "failed to decode users %s", err.Error())
 	}
 	return results, nil
 }
@@ -54,21 +54,29 @@ func (s *UsersStorage) GetUser(ctx context.Context, walletAddress string) (pymwy
 		return result, pymwymi.Errorf(pymwymi.ErrUserNotFound, "user not found")
 	}
 	if err != nil {
-		return result, pymwymi.Errorf(pymwymi.ErrUserNotFound, "failed to get user (%v): %s", walletAddress, err)
+		return result, pymwymi.Errorf(pymwymi.ErrInternal, "%s", err.Error())
 	}
 	return result, nil
 }
 
-// this supports lots of fields but for now we just should be passing name as this is the only thing that makes sense
-func (s *UsersStorage) UpdateUser(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
-	filter := bson.D{{Key: "_id", Value: id}}
-	update := bson.D{}
-	for _, field := range fieldsToSet {
-		update = append(update, bson.E{Key: field.Field, Value: field.Value})
+func (s *UsersStorage) UpdateUser(ctx context.Context, name, walletAddress string) (pymwymi.PersistedUser, *pymwymi.Error) {
+	filter := bson.D{
+		{Key: "walletAddress", Value: walletAddress},
 	}
-	_, err := s.c.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: update}})
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "name", Value: name},
+		}},
+	}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	var updatedUser pymwymi.PersistedUser
+	err := s.c.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedUser)
+	if err == mongo.ErrNoDocuments {
+		return pymwymi.PersistedUser{}, pymwymi.Errorf(pymwymi.ErrUserNotFound, "user not found")
+	}
 	if err != nil {
-		return fmt.Errorf("failed to update user (%v): %w", id, err)
+		return pymwymi.PersistedUser{}, pymwymi.Errorf(pymwymi.ErrInternal, "%s", err)
 	}
-	return nil
+	return updatedUser, nil
 }

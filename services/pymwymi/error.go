@@ -11,7 +11,7 @@ const (
 	ErrUserNotFound      ErrorCode = "user_not_found"
 	ErrUserAlreadyExists ErrorCode = "user_already_exists"
 	ErrNotPYMWYMIUser    ErrorCode = "not_pymwymi_user"
-	ErrChallengeNotFound ErrorCode = "challenge_not_found"
+	ErrWagerNotFound     ErrorCode = "wager_not_found"
 	ErrBadInput          ErrorCode = "bad_input"
 	ErrVotingFinished    ErrorCode = "voting_finished"
 	ErrNotParticipant    ErrorCode = "not_participant"

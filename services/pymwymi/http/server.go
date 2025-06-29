@@ -11,18 +11,18 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
-	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/user"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/wager"
 )
 
 type Server struct {
-	router              *chi.Mux
-	authService         *auth.Service
-	userService         *user.Service
-	blockchainService   *blockchain.Service
-	challengeService    *challenge.Service
-	authMiddleware      func(http.Handler) http.Handler
-	updateChallengeBusy chan bool
+	router            *chi.Mux
+	authService       *auth.Service
+	userService       *user.Service
+	blockchainService *blockchain.Service
+	wagerService      *wager.Service
+	authMiddleware    func(http.Handler) http.Handler
+	updateWagerBusy   chan bool
 	// Db, config can be added here
 }
 
@@ -32,15 +32,15 @@ func (s *Server) Start(port string) {
 }
 
 // need auth middleware - get user to sign transaction
-func NewServer(uS *user.Service, cS *challenge.Service, bS *blockchain.Service, aS *auth.Service) *Server {
+func NewServer(uS *user.Service, cS *wager.Service, bS *blockchain.Service, aS *auth.Service) *Server {
 	s := &Server{
-		router:              chi.NewRouter(),
-		authService:         aS,
-		userService:         uS,
-		blockchainService:   bS,
-		challengeService:    cS,
-		authMiddleware:      authMiddleware(aS),
-		updateChallengeBusy: make(chan bool, 1),
+		router:            chi.NewRouter(),
+		authService:       aS,
+		userService:       uS,
+		blockchainService: bS,
+		wagerService:      cS,
+		authMiddleware:    authMiddleware(aS),
+		updateWagerBusy:   make(chan bool, 1),
 	}
 
 	s.router.Use(httprate.LimitByIP(100, time.Minute))
@@ -66,8 +66,8 @@ func NewServer(uS *user.Service, cS *challenge.Service, bS *blockchain.Service, 
 
 	// /auth
 	s.mountAuthRoutes()
-	// /challenge
-	s.mountChallengeRoutes()
+	// /wager
+	s.mountWagerRoutes()
 
 	return s
 }

@@ -10,53 +10,53 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-type ChallengeStorage struct {
+type WagerStorage struct {
 	c *mongo.Collection
 }
 
-func NewChallengeStore(client *mongo.Client, dbName string) *ChallengeStorage {
-	return &ChallengeStorage{
-		c: client.Database(dbName).Collection("challenges"),
+func NewWagerStore(client *mongo.Client, dbName string) *WagerStorage {
+	return &WagerStorage{
+		c: client.Database(dbName).Collection("wagers"),
 	}
 }
 
-func (s *ChallengeStorage) CreateChallenge(ctx context.Context, challenge *pymwymi.Challenge) *pymwymi.Error {
-	_, err := s.c.InsertOne(ctx, challenge)
+func (s *WagerStorage) CreateWager(ctx context.Context, wager *pymwymi.Wager) *pymwymi.Error {
+	_, err := s.c.InsertOne(ctx, wager)
 	if err != nil {
-		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to create challenge: %s", err.Error())
+		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to create wager: %s", err.Error())
 	}
 	return nil
 }
 
 // this has race conditions and is important to only allow a single vote to make it through
-func (s *ChallengeStorage) UpdateChallengeWithVote(ctx context.Context, id string, challenge pymwymi.Challenge) *pymwymi.Error {
+func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id string, wager pymwymi.Wager) *pymwymi.Error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
+		return pymwymi.Errorf(pymwymi.ErrBadInput, "invalid wager id (%v): %v", id, err)
 	}
-	validStatuses := []pymwymi.ChallengeStatus{pymwymi.StateCreated, pymwymi.StatePending}
+	validStatuses := []pymwymi.WagerStatus{pymwymi.StateCreated, pymwymi.StatePending}
 	filter := bson.D{
 		{Key: "_id", Value: objectId},
 		{Key: "status", Value: bson.D{{Key: "$in", Value: validStatuses}}},
 	}
 	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "status", Value: challenge.Status},
-		bson.E{Key: "participants", Value: challenge.Participants},
+		bson.E{Key: "status", Value: wager.Status},
+		bson.E{Key: "participants", Value: wager.Participants},
 	}}}
 	result, err := s.c.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to update challenge (%v): %v", id, err)
+		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to update wager (%v): %v", id, err)
 	}
-	// at this point we have already verified the challenge exists
-	// if there are no challenges found - its the status part of the filter that isnt matching
+	// at this point we have already verified the wager exists
+	// if there are no wagers found - its the status part of the filter that isnt matching
 	// ie its not in pending or created state and therefore voting is over
 	if result.MatchedCount == 0 {
-		return pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting in this challenge no longer possible")
+		return pymwymi.Errorf(pymwymi.ErrVotingFinished, "voting in this wager no longer possible")
 	}
 	return nil
 }
 
-func (s *ChallengeStorage) UpdateChallenge(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
+func (s *WagerStorage) UpdateWager(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return err
@@ -68,37 +68,37 @@ func (s *ChallengeStorage) UpdateChallenge(ctx context.Context, id string, field
 	}
 	_, err = s.c.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: setDoc}})
 	if err != nil {
-		return fmt.Errorf("failed to update challenge (%v): %w", id, err)
+		return fmt.Errorf("failed to update wager (%v): %w", id, err)
 	}
 	return nil
 }
 
 // we need to handle not found and a genuine db error differently
-func (s *ChallengeStorage) GetChallengeByID(ctx context.Context, id string) (pymwymi.PersistedChallenge, *pymwymi.Error) {
-	var challenge pymwymi.PersistedChallenge
+func (s *WagerStorage) GetWagerByID(ctx context.Context, id string) (pymwymi.PersistedWager, *pymwymi.Error) {
+	var wager pymwymi.PersistedWager
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return challenge, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid challenge id (%v): %v", id, err)
+		return wager, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid wager id (%v): %v", id, err)
 	}
 	filter := bson.D{bson.E{Key: "_id", Value: objectId}}
-	err = s.c.FindOne(ctx, filter).Decode(&challenge)
+	err = s.c.FindOne(ctx, filter).Decode(&wager)
 	if err == mongo.ErrNoDocuments {
-		return challenge, pymwymi.Errorf(pymwymi.ErrChallengeNotFound, "challenge (%v) not found", id)
+		return wager, pymwymi.Errorf(pymwymi.ErrWagerNotFound, "wager (%v) not found", id)
 	}
 	if err != nil {
-		return challenge, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get challenge (%v): %v", id, err)
+		return wager, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get wager (%v): %v", id, err)
 	}
-	return challenge, nil
+	return wager, nil
 }
 
 // you can submit an empty walletAddress but not an empty status
-func (s *ChallengeStorage) GetChallengesByStatus(
+func (s *WagerStorage) GetWagersByStatus(
 	ctx context.Context,
 	walletAddress string,
-	status pymwymi.ChallengeStatus,
+	status pymwymi.WagerStatus,
 	pageOpts pymwymi.PageOpts,
-) ([]pymwymi.PersistedChallenge, error) {
-	result := []pymwymi.PersistedChallenge{}
+) ([]pymwymi.PersistedWager, error) {
+	result := []pymwymi.PersistedWager{}
 	filter := bson.D{bson.E{Key: "status", Value: status}}
 	if walletAddress != "" {
 		filter = append(filter, bson.E{Key: "walletAddress", Value: walletAddress})
@@ -106,7 +106,7 @@ func (s *ChallengeStorage) GetChallengesByStatus(
 	options := setPageOptions(options.Find(), pageOpts)
 	cursor, err := s.c.Find(ctx, filter, options)
 	if err != nil {
-		return result, fmt.Errorf("failed to get challenges: %w", err)
+		return result, fmt.Errorf("failed to get wagers: %w", err)
 	}
 	cursor.All(ctx, &result)
 	return result, nil

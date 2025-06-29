@@ -11,8 +11,8 @@ import (
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/mongo"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/blockchain"
-	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/challenge"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/user"
+	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/wager"
 	"github.com/joho/godotenv"
 )
 
@@ -24,7 +24,7 @@ func init() {
 }
 
 func main() {
-	fmt.Println("starting up challenge api")
+	fmt.Println("starting up wager api")
 	// load env vars
 	validateEnvVars(
 		os.Getenv("PORT"),
@@ -41,9 +41,9 @@ func main() {
 
 	dbName := "pymwymi"
 
-	challengeStorage := mongo.NewChallengeStore(mongoClient, dbName)
+	wagerStorage := mongo.NewWagerStore(mongoClient, dbName)
 	userStorage := mongo.NewUsersStore(mongoClient, dbName)
-	challengeService := challenge.NewChallengeService(challengeStorage, userStorage)
+	wagerService := wager.NewWagerService(wagerStorage, userStorage)
 
 	blockchainService := blockchain.NewBlockchainService()
 
@@ -52,7 +52,7 @@ func main() {
 
 	userService := user.NewUserService(userStorage)
 
-	server := http.NewServer(userService, challengeService, blockchainService, authService)
+	server := http.NewServer(userService, wagerService, blockchainService, authService)
 	server.Start(os.Getenv("PORT"))
 }
 
