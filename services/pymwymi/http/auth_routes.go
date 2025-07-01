@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -65,6 +66,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	var user pymwymi.User
 	existingUser, err := s.userService.GetUser(ctx, authDTO.WalletAddress)
+	log.Printf("existingUser: %v, err: %v", existingUser, err)
 	if err != nil && err.Code != pymwymi.ErrUserNotFound {
 		handlePYMWYMIError(w, err, "failed to authenticate")
 		return

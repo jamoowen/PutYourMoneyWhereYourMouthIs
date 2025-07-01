@@ -23,19 +23,23 @@ func (s *Service) CreateUser(ctx context.Context, walletAddress string) (pymwymi
 		Name:          pymwymi.DEFAULT_USER_NAME,
 	}
 	err := s.storage.CreateUser(ctx, newUser)
-
-	if err == nil {
-		return pymwymi.User{}, pymwymi.Errorf(pymwymi.ErrUserAlreadyExists, "failed to create user: user already exists")
+	if err != nil {
+		return pymwymi.User{}, pymwymi.Errorf(pymwymi.ErrInternal, "failed to create user: %s", err.Error())
 	}
-	return pymwymi.User{}, pymwymi.Errorf(pymwymi.GetErrorCode(err), "failed to create user: %s", err.Error())
+	return newUser, nil
 }
 
 func (s *Service) GetUser(ctx context.Context, walletAddress string) (pymwymi.User, *pymwymi.Error) {
-	user, err := s.storage.GetUser(ctx, walletAddress)
+	persistedUser, err := s.storage.GetUser(ctx, walletAddress)
 	if err != nil {
 		return pymwymi.User{}, pymwymi.Errorf(err.Code, "failed to get user: %s", err.Error())
 	}
-	return user.User, nil
+
+	user := pymwymi.User{
+		WalletAddress: persistedUser.WalletAddress,
+		Name:          persistedUser.Name,
+	}
+	return user, nil
 }
 
 func (s *Service) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.User, error) {
@@ -45,7 +49,11 @@ func (s *Service) GetUsers(ctx context.Context, wallets []string) ([]pymwymi.Use
 		return users, err
 	}
 	for _, persistedUser := range persistedUsers {
-		users = append(users, persistedUser.User)
+		user := pymwymi.User{
+			WalletAddress: persistedUser.WalletAddress,
+			Name:          persistedUser.Name,
+		}
+		users = append(users, user)
 	}
 	return users, nil
 }
@@ -55,5 +63,10 @@ func (s *Service) UpdateName(ctx context.Context, newName string, walletAddress 
 	if err != nil {
 		return pymwymi.User{}, pymwymi.Errorf(err.Code, "failed to update user name: %s", err.Error())
 	}
-	return updatedUser.User, nil
+	user := pymwymi.User{
+		WalletAddress: updatedUser.WalletAddress,
+		Name:          updatedUser.Name,
+	}
+
+	return user, nil
 }

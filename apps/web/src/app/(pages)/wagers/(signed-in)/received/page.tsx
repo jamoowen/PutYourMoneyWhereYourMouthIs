@@ -13,6 +13,7 @@ export default function Page() {
     <div>
 
       <div className="tabs tabs-border">
+
       </div>
 
     </div>

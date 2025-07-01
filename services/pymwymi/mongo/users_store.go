@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"time"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -20,7 +21,14 @@ func NewUsersStore(client *mongo.Client, dbName string) *UsersStorage {
 }
 
 func (s *UsersStorage) CreateUser(ctx context.Context, user pymwymi.User) *pymwymi.Error {
-	_, err := s.c.InsertOne(ctx, user)
+	now := time.Now().UTC().Format(time.RFC3339)
+	persistedUser := pymwymi.PersistedUser{
+		CreatedAt:     now,
+		UpdatedAt:     now,
+		Name:          user.Name,
+		WalletAddress: user.WalletAddress,
+	}
+	_, err := s.c.InsertOne(ctx, persistedUser)
 	if err != nil {
 		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to insert new user: %s", err)
 	}
@@ -59,13 +67,15 @@ func (s *UsersStorage) GetUser(ctx context.Context, walletAddress string) (pymwy
 	return result, nil
 }
 
-func (s *UsersStorage) UpdateUser(ctx context.Context, name, walletAddress string) (pymwymi.PersistedUser, *pymwymi.Error) {
+func (s *UsersStorage) UpdateName(ctx context.Context, name, walletAddress string) (pymwymi.PersistedUser, *pymwymi.Error) {
+	now := time.Now().UTC().Format(time.RFC3339)
 	filter := bson.D{
 		{Key: "walletAddress", Value: walletAddress},
 	}
 	update := bson.D{
 		{Key: "$set", Value: bson.D{
 			{Key: "name", Value: name},
+			{Key: "updatedAt", Value: now},
 		}},
 	}
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)

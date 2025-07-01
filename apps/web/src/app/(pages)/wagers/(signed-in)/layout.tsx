@@ -1,45 +1,28 @@
-'use client'
-
-import { useSelectedLayoutSegment } from 'next/navigation'
 import Link from 'next/link'
-import { cn } from '@/lib/utils' // optional utility for conditional classes
-import NewWager from '../new-wager'
+import { cn, getAuthStatus } from '@/lib/utils' // optional utility for conditional classes
+import NewWager from './new-wager'
+import { cookies, headers } from 'next/headers'
 
-const WAGERS_ROUTES = [
-  { href: '/wagers/pending', label: 'In Progress' },
-  { href: '/wagers/claimable', label: 'Claimable' },
-  { href: '/wagers/received', label: 'Received' },
-  { href: '/wagers/sent', label: 'Sent' },
-  { href: '/wagers/history', label: 'History' },
-]
-
-export default function WagersLayout({
+export default async function WagersLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const segment = useSelectedLayoutSegment()
+  const allCookies = await cookies()
+  const token = allCookies.get('pymwymi_auth_token')?.value ?? null;
+  const [user] = getAuthStatus(token)
+
+  if (!user) {
+    return null
+  }
 
   return (
     <div className='w-full flex flex-col max-w-[500px] items-center'>
       <div className='w-full '>
-        <NewWager />
+        <NewWager user={user} />
+
       </div>
       <div className="tabs justify-between w-full tabs-border mb-4">
-        {WAGERS_ROUTES.map((route) => {
-          const path = route.href.split('/').pop()
-          const isActive = segment === path
-
-          return (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn('tab', isActive && 'tab-active')}
-            >
-              {route.label}
-            </Link>
-          )
-        })}
       </div>
       <div className="p-4 border border-base-300 w-full bg-base-100 rounded-box">
         {children}

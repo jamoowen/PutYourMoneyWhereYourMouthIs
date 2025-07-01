@@ -26,11 +26,11 @@ function parseJwt(token: string | null): User | null {
 
 export function getAuthStatus(token: string | null): [User | null, Authorisation] {
   const user = parseJwt(token);
-  let auth = Authorisation.Unauthorised;
   if (user && user.exp < Date.now() / 1000) {
-    auth = Authorisation.Expired
+    return [null, Authorisation.Expired]
   } else if (user) {
-    auth = Authorisation.Authorised
+    return [user, Authorisation.Authorised]
+  } else {
+    return [null, Authorisation.Unauthorised]
   }
-  return [user, auth]
 }

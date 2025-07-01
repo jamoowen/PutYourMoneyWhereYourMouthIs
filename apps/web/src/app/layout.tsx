@@ -13,6 +13,7 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import Nav from "./nav";
+import EditProfile from "@/components/edit-profile";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default async function RootLayout({
         <Providers initialState={initialState}>
           <main className="flex p-2 flex-col items-center h-[100vh] justify-items-center bg-background text-white">
             <Nav />
+            <EditProfile />
             {children}
           </main>
         </Providers>

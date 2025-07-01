@@ -1,4 +1,3 @@
-import SignIn from '@/components/sign-in'
 import { getAuthStatus } from '@/lib/utils';
 import { Authorisation } from '@/types';
 import { cookies } from 'next/headers';
@@ -15,7 +14,7 @@ export default async function Page() {
 
   return (
     <div className='flex flex-col items-center'>
-      <SignIn />
+      Sign in to view your wagers or create new ones.
     </div>
 
   )
