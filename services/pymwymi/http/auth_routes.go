@@ -36,7 +36,7 @@ func (s *Server) mountAuthRoutes() {
 
 	r := chi.NewRouter()
 	r.Post("/", s.authenticate)
-	r.Patch("/", s.updateName)
+	r.With(s.authMiddleware).Patch("/", s.updateName)
 	s.router.Mount(prefix, r)
 }
 
@@ -117,6 +117,7 @@ func (s *Server) updateName(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	user := pymwymi.GetUserFromCtx(ctx)
+	log.Printf("user: %v name: %v", user, changeNameDTO)
 
 	updatedUser, err := s.userService.UpdateName(ctx, changeNameDTO.Name, user.WalletAddress)
 	if err != nil {

@@ -48,8 +48,8 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers initialState={initialState}>
-          <main className="flex p-2 flex-col items-center h-[100vh] justify-items-center bg-background text-white">
-            <Nav />
+          <Nav />
+          <main className="flex p-10 flex-col items-center h-[100vh] justify-items-center bg-background text-white">
             <EditProfile />
             {children}
           </main>

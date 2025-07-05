@@ -27,7 +27,7 @@ export default function Button({
     primary: 'bg-gradient-to-r from-indigo-500 to-purple-600 text-foreground hover:shadow-lg',
     secondary: 'bg-gray-800 text-white hover:bg-gray-700',
     outline: 'border border-indigo-500 text-indigo-500 hover:text-foreground',
-    ghost: 'bg-transparent text-gray-400 hover:bg-gray-100 hover:text-gray-700',
+    ghost: 'bg-transparent text-gray-400 hover:bg-gray-100 hover:text-indigo-500',
   }
 
   return (

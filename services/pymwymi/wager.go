@@ -6,9 +6,18 @@ package pymwymi
 // chain? eth? sol? ...
 // perhaps sol.
 
-type WagerStatus int8
+type (
+	WagerStatus       int8
+	InteractionStatus int8
+)
 
-// Constants
+const (
+	InteractionStateDormant InteractionStatus = iota
+	InteractionStatePending
+	InteractionStateConfirmed
+)
+
+// these map directly to the states on the smart contract
 const (
 	StateCreated WagerStatus = iota
 	StatePending
@@ -32,28 +41,32 @@ type Vote struct {
 }
 
 type Player struct {
-	WalletAddress string `bson:"walletAddress" json:"walletAddress"`
-	Vote          Vote   `bson:"vote" json:"vote"`
-	HasStaked     bool   `bson:"hasStaked" json:"hasStaked"`
-	HasWithdrawn  bool   `bson:"hasWithdrawn" json:"hasWithdrawn"`
+	WalletAddress    string            `bson:"walletAddress" json:"walletAddress"`
+	Vote             Vote              `bson:"vote" json:"vote"`
+	HasStaked        bool              `bson:"hasStaked" json:"hasStaked"`
+	StakeStatus      InteractionStatus `bson:"stakeStatus" json:"stakeStatus"`
+	HasWithdrawn     bool              `bson:"hasWithdrawn" json:"hasWithdrawn"`
+	WithdrawalStatus InteractionStatus `bson:"withdrawalStatus" json:"withdrawalStatus"`
 }
 
 type Wager struct {
-	ID              string      `bson:"_id" json:"_id"`
-	TransactionHash string      `bson:"transactionHash" json:"transactionHash"`
-	Creator         string      `bson:"creator" json:"creator"`
-	Name            string      `bson:"name" json:"name"`
-	Category        string      `bson:"category" json:"category"`
-	Description     string      `bson:"description" json:"description"`
-	Location        string      `bson:"location" json:"location"`
-	Stake           string      `bson:"stake" json:"stake"`
-	Currency        string      `bson:"currency" json:"currency"`
-	Participants    []Player    `bson:"participants" json:"participants"`
-	Status          WagerStatus `bson:"status" json:"status"`
-	Winner          string      `bson:"winner" json:"winner"`
+	ID              string            `bson:"_id" json:"_id"`
+	TransactionHash string            `bson:"transactionHash" json:"transactionHash"`
+	Creator         string            `bson:"creator" json:"creator"`
+	CreationStatus  InteractionStatus `bson:"creationStatus" json:"creationStatus"`
+	Name            string            `bson:"name" json:"name"`
+	Category        string            `bson:"category" json:"category"`
+	Description     string            `bson:"description" json:"description"`
+	Location        string            `bson:"location" json:"location"`
+	Stake           string            `bson:"stake" json:"stake"`
+	Currency        string            `bson:"currency" json:"currency"`
+	Participants    []Player          `bson:"participants" json:"participants"`
+	Status          WagerStatus       `bson:"status" json:"status"`
+	Winner          string            `bson:"winner" json:"winner"`
 }
 
 type PersistedWager struct {
-	CreatedAt int64 `json:"createdAt" bson:"createdAt"`
-	Wager
+	CreatedAt string `json:"createdAt" bson:"createdAt"`
+	UpdatedAt string `json:"updatedAt" bson:"updatedAt"`
+	Wager     `bson:",inline" json:",inline"`
 }

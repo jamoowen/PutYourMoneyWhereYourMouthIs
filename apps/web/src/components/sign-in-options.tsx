@@ -45,8 +45,8 @@ export default function SignInOptions({ open }: { open?: boolean }) {
         throw new Error(`ERROR signing in: ${res.status}: ${data}`)
       }
       if (data.authCode === SIGNED_UP) {
-        console.log(`new user signed up`)
-        //prompt user to enter their name 
+        const editProfileDialog = document.getElementById('edit_profile_modal') as HTMLDialogElement
+        editProfileDialog.showModal()
       }
       router.refresh()
     } catch (error) {

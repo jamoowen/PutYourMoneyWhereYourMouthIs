@@ -53,7 +53,7 @@ func NewServer(uS *user.Service, cS *wager.Service, bS *blockchain.Service, aS *
 	s.router.Use(middleware.Timeout(60 * time.Second))
 	s.router.Use(cors.Handler(cors.Options{
 		AllowOriginFunc:  AllowOriginFunc,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,

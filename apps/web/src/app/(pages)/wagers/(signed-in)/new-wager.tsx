@@ -72,6 +72,8 @@ export default function NewWager({ user }: { user: User }) {
   // 4. 
   async function onSubmit(data: NewChallengeForm) {
     try {
+      const userWalletAddress = user.walletAddress
+      // connect to this wallet specifically
       // this screen is protected by sign in but we might not have wallet connected
       if (!isConnected || address !== user.walletAddress) {
         const dialog = document.getElementById('sign_in_modal_2') as HTMLDialogElement
@@ -102,8 +104,13 @@ export default function NewWager({ user }: { user: User }) {
         tabIndex={0}
         role="button"
       >
-        +
+        Create
       </Button>
+      <dialog id="sign_in_modal_2" className="modal">
+        <div className="modal-box max-h-[80vh] overflow-y-auto">
+          <SignInOptions />
+        </div>
+      </dialog>
       <dialog id="new_wager_modal" className="modal">
         <div className="modal-box max-h-[80vh] overflow-y-auto">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

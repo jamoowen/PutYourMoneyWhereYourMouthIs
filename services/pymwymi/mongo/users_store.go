@@ -2,6 +2,8 @@ package mongo
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
@@ -21,13 +23,14 @@ func NewUsersStore(client *mongo.Client, dbName string) *UsersStorage {
 }
 
 func (s *UsersStorage) CreateUser(ctx context.Context, user pymwymi.User) *pymwymi.Error {
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := pymwymi.IsoNow()
 	persistedUser := pymwymi.PersistedUser{
-		CreatedAt:     now,
-		UpdatedAt:     now,
-		Name:          user.Name,
-		WalletAddress: user.WalletAddress,
+		CreatedAt: now,
+		UpdatedAt: now,
+		User:      user,
 	}
+	b, _ := bson.MarshalExtJSON(persistedUser, false, false)
+	fmt.Println(string(b))
 	_, err := s.c.InsertOne(ctx, persistedUser)
 	if err != nil {
 		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to insert new user: %s", err)
@@ -88,5 +91,6 @@ func (s *UsersStorage) UpdateName(ctx context.Context, name, walletAddress strin
 	if err != nil {
 		return pymwymi.PersistedUser{}, pymwymi.Errorf(pymwymi.ErrInternal, "%s", err)
 	}
+	log.Printf("updated user: %v", updatedUser)
 	return updatedUser, nil
 }

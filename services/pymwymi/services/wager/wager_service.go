@@ -84,9 +84,12 @@ func (s *Service) CreateWager(ctx context.Context,
 	}
 
 	status := pymwymi.StateCreated
-	newWager := pymwymi.Wager{
+	creationStatus := pymwymi.InteractionStatePending
+
+	wager := pymwymi.Wager{
 		TransactionHash: transactionHash,
 		Creator:         creator,
+		CreationStatus:  creationStatus,
 		Name:            name,
 		Category:        category,
 		Description:     description,
@@ -96,11 +99,12 @@ func (s *Service) CreateWager(ctx context.Context,
 		Participants:    participants,
 		Status:          status,
 	}
-	err := s.wagerStorage.CreateWager(ctx, &newWager)
+
+	err := s.wagerStorage.CreateWager(ctx, wager)
 	if err != nil {
 		return pymwymi.Wager{}, pymwymi.Errorf(err.Code, "failed to create wager: %s", err.Message)
 	}
-	return newWager, nil
+	return wager, nil
 }
 
 // // once all players have staked, it changes to pending state

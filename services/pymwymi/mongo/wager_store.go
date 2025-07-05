@@ -20,8 +20,13 @@ func NewWagerStore(client *mongo.Client, dbName string) *WagerStorage {
 	}
 }
 
-func (s *WagerStorage) CreateWager(ctx context.Context, wager *pymwymi.Wager) *pymwymi.Error {
-	_, err := s.c.InsertOne(ctx, wager)
+func (s *WagerStorage) CreateWager(ctx context.Context, wager pymwymi.Wager) *pymwymi.Error {
+	persistedWager := pymwymi.PersistedWager{
+		CreatedAt: pymwymi.IsoNow(),
+		UpdatedAt: pymwymi.IsoNow(),
+		Wager:     wager,
+	}
+	_, err := s.c.InsertOne(ctx, persistedWager)
 	if err != nil {
 		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to create wager: %s", err.Error())
 	}

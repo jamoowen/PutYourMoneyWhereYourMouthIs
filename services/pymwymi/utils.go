@@ -1,6 +1,9 @@
 package pymwymi
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type PageOpts struct {
 	Page  int64
@@ -25,4 +28,12 @@ func GetUserFromCtx(ctx context.Context) User {
 
 func GetPageOptsFromCtx(ctx context.Context) PageOpts {
 	return ctx.Value(PaginationKey).(PageOpts)
+}
+
+func GetIsoTime(t time.Time) string {
+	return t.Format(time.RFC3339)
+}
+
+func IsoNow() string {
+	return GetIsoTime(time.Now())
 }

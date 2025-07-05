@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Button from '@/components/common/button'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(50, 'That name is way too long'),
@@ -13,7 +14,11 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function EditProfile() {
+  const router = useRouter()
+
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editNameErr, setEditNameErr] = useState<string | null>(null)
+
   const {
     register,
     handleSubmit,
@@ -34,11 +39,16 @@ export default function EditProfile() {
           'Content-Type': 'application/json',
         },
       })
-      console.log(res)
       if (!res.ok) throw new Error('Update failed')
+      setEditNameErr(null)
+      const dialog = document.getElementById('edit_profile_modal') as HTMLDialogElement
+      dialog.close()
+      router.refresh()
+
       // Optionally close modal or show success
     } catch (err) {
       console.error(err)
+      setEditNameErr(`Failed to update name`)
     } finally {
       setIsSubmitting(false)
     }
@@ -49,6 +59,10 @@ export default function EditProfile() {
       <dialog id="edit_profile_modal" className="modal">
         <div className="modal-box ">
           <h3 className="text-lg font-bold mb-4">Update Your Name</h3>
+          {editNameErr && (
+            <p className="text-sm text-red-500 mt-3 mr-auto">{editNameErr}</p>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label htmlFor="name" className="block mb-1 font-medium">
