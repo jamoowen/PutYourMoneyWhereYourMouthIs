@@ -62,13 +62,13 @@ func (s *Service) GetWagersForUser(ctx context.Context, status pymwymi.WagerStat
 
 // @DEV I thought we should store the pymwymi users on the record but just walletAddress is probably fine
 func (s *Service) CreateWager(ctx context.Context,
-	transactionHash,
-	name,
+	stake int64,
 	category,
+	currency,
 	description,
 	location,
-	stake,
-	currency string,
+	name,
+	transactionHash string,
 	participantsWalletAddresses []string,
 ) (pymwymi.Wager, *pymwymi.Error) {
 	creator := pymwymi.GetUserFromCtx(ctx).WalletAddress

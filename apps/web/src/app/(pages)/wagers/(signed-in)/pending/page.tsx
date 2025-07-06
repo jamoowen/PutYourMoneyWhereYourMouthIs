@@ -9,6 +9,7 @@ export default function Page() {
 
   return (
     <div>
+      <button onClick={() => disconnect()}>Disconnect</button>
       ppending page
       alskdjfladjkspoqwip
       lkjfsdfjalsdkfj;lk

@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Button from './common/button'
 import { useAccount, useConnect, useSignMessage } from 'wagmi'
 import { CreateConnectorFn } from '@wagmi/core'
 
-import { supportedWallets as SUPPORTED_WALLETS } from '@/lib/supported-wallets'
+import { supportedWallets as SUPPORTED_WALLETS } from '@/lib/blockchain'
 import { useRouter } from 'next/navigation'
 
 const SIGN_IN_STRING = "PYMWYMI_sign_in"
@@ -15,7 +15,7 @@ const SIGNED_IN = "SIGNED_IN"
 /**
  * @TODO if auth response is SIGNED_UP -> we need to prompt user with another form to add name
  */
-export default function SignInOptions({ open }: { open?: boolean }) {
+export default function SignInOptions({ onSignIn }: { onSignIn?: () => void }) {
   const router = useRouter()
   const { connect } = useConnect({ mutation: { onSuccess: signTransactionAndPost } })
   const { address, isConnected } = useAccount()
@@ -54,6 +54,12 @@ export default function SignInOptions({ open }: { open?: boolean }) {
       setSignInErr(`Failed to sign in`)
     } finally {
       setSignInLoading(false)
+      const signInDialog = document.getElementById('sign_in_modal') as HTMLDialogElement
+      signInDialog.close()
+
+      if (onSignIn) {
+        onSignIn()
+      }
     }
   }
 
@@ -76,13 +82,6 @@ export default function SignInOptions({ open }: { open?: boolean }) {
       setSignInLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (open) {
-      const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
-      dialog.showModal()
-    }
-  }, [open])
 
   return (
     <>

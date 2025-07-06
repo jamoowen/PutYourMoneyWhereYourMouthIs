@@ -4,8 +4,7 @@ GO_BUILD_FLAGS=-ldflags="-s -w"
 
 # Directories for Go services
 SERVICES_DIR=services
-CHALLENGE_API_NAME=pymwymi
-CHALLENGE_SERVICE_NAME=challenge-service
+API_NAME=pymwymi
 MOBILE_DIR=apps/mobile
 FRONTEND_DIR=apps/web
 
@@ -19,9 +18,9 @@ web-dev:
 	cd apps/web && npm run dev
 
 
-run-challenge-api:
+run-api:
 	@echo "Running challenge api..."
-	cd $(SERVICES_DIR)/$(CHALLENGE_API_NAME) && $(GO_CMD) run ./cmd/api
+	cd $(SERVICES_DIR)/$(API_NAME) && $(GO_CMD) run ./cmd/api
 
 # ---- DOCKER ----
 # Build Docker images for backend services

@@ -2,14 +2,29 @@
 
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import Button from '@/components/common/button'
 import { categories } from '@/lib/wager-categories'  // Your categories array here
 import Image from 'next/image'
 import SignInOptions from '@/components/sign-in-options'
-import { useAccount, useConnect, useSignMessage } from 'wagmi'
+import contractJson from '@/contracts/ChallengeEscrow.json' assert { type: 'json' }
 import { User } from '@/types'
+import abi from '@/contracts/ChallengeEscrow.json' assert { type: 'json' }
+import { Abi, Address } from 'viem'
+import { fromUSDCLarge, getTokenAddress, getChainId, getPYMWYMIContractAddress } from '@/lib/blockchain'
+import { useAccount, useSwitchChain, useWriteContract } from 'wagmi'
+
+type NewWagerPayload = {
+  transactionHash: string
+  name: string
+  category: string
+  description: string
+  location: string
+  stake: string         // e.g. amount in base units
+  currency: string      // e.g. "USDC"
+  participantsAddresses: string[]
+}
 
 // Create Zod enum dynamically from categories array
 const categoryEnum = z.enum(categories)
@@ -17,15 +32,15 @@ const categoryEnum = z.enum(categories)
 // Ethereum address validation schema
 const ethAddress = z
   .string()
-  .min(42, 'Address must be 42 characters')
-  .max(42, 'Address must be 42 characters')
+  .min(42, 'That address looks too short')
+  .max(42, 'That address looks too long')
   .refine((val) => val.startsWith('0x'), 'Address must start with 0x')
 
 const newChallengeSchema = z.object({
   name: z.string().min(1, 'We need to call this challenge something???').max(50, `That name is long af, chill.`),
   category: categoryEnum,
-  description: z.string().max(500, `Chill, thats enough info`),
-  location: z.string().min(1, 'Required').max(50, `Theres no ways thats a real place bro`),
+  description: z.string().max(500, `Chill, thats enough info.`).optional(),
+  location: z.string().max(100, `There's no way that is a real place.`).optional(),
   stake: z.number().min(1, 'Required').max(1_000_000, `You're not that rich. Be real`),
   currency: z.literal('USDC'),
   chain: z.literal('Base'),
@@ -39,6 +54,9 @@ type NewChallengeForm = z.infer<typeof newChallengeSchema>
 
 export default function NewWager({ user }: { user: User }) {
   const { address, isConnected } = useAccount()
+  const { data: hash, writeContract, isPending: isWriteContractPending, isSuccess, error: writeContractError } = useWriteContract()
+  const { switchChain, chains, error: switchChainError, isPending: isSwitchChainPending } = useSwitchChain()
+  const [newWagerPayload, setNewWagerPayload] = useState<NewWagerPayload | null>(null)
 
   const {
     register,
@@ -52,10 +70,10 @@ export default function NewWager({ user }: { user: User }) {
       category: categories[0], // default to first category
       description: '',
       location: '',
-      stake: 0,
+      stake: 5,
       currency: 'USDC',
       chain: "Base",
-      participantsAddresses: [''], // One participant by default
+      participantsAddresses: [], // One participant by default
     },
   })
 
@@ -72,33 +90,104 @@ export default function NewWager({ user }: { user: User }) {
   // 4. 
   async function onSubmit(data: NewChallengeForm) {
     try {
+      console.log(`submitting new wager form: `)
       const userWalletAddress = user.walletAddress
       // connect to this wallet specifically
       // this screen is protected by sign in but we might not have wallet connected
       if (!isConnected || address !== user.walletAddress) {
         const dialog = document.getElementById('sign_in_modal_2') as HTMLDialogElement
         dialog.showModal()
-        return
       }
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/challenges`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
+
+      // first thing make sure we are on the correct chain
+      const chainId = getChainId(data.chain)
+      if (!chainId.ok) {
+        throw chainId.error
+      }
+
+      await switchChain({ chainId: chainId.value })
+      console.log(`successful chain switch`)
+
+      const contractAddress = getPYMWYMIContractAddress()
+      if (!contractAddress.ok) {
+        throw contractAddress.error
+      }
+      const tokenAddress = getTokenAddress(data.currency, chainId.value)
+      if (!tokenAddress.ok) {
+        throw tokenAddress.error
+      }
+
+      // ok here we need to write contract
+      const stake = fromUSDCLarge(data.stake.toString())
+
+      const abi = contractJson.abi as Abi
+
+      const payload: NewWagerPayload = {
+        transactionHash: "",
+        name: data.name,
+        category: data.category,
+        description: data.description ?? "",
+        location: data.location ?? "",
+        stake: stake,
+        currency: data.currency,
+        participantsAddresses: data.participantsAddresses,
+      }
+      setNewWagerPayload(payload)
+
+      console.log(`writing contract: ${contractAddress.value}, ${stake}, ${tokenAddress.value}`)
+      writeContract({
+        address: contractAddress.value,
+        abi,
+        functionName: 'createChallenge',
+        args: [
+          data.participantsAddresses,
+          stake,
+          tokenAddress.value
+        ],
       })
-      if (!res.ok) throw new Error('Failed to create challenge')
+
     } catch (err) {
       console.error(err)
     }
   }
 
+  useEffect(() => {
+    if (!isSuccess || !hash) return
+    (async () => {
+      console.log(`hash: ${hash}`)
+      try {
+        const payload = {
+          ...newWagerPayload,
+          transactionHash: hash
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        })
+        const responseData = await response.json()
+        console.log(`RES: ${response.status}, ${response.statusText},${JSON.stringify(responseData)}`)
+        if (!response.ok) throw new Error('Failed to create challenge')
+      } catch (err) {
+        console.error(err)
+      }
+    })()
+
+  }, [hash])
+
   return (
     <div>
       <Button
         onClick={() => {
-          // document.getElementById('new_wager_modal')?.showModal()
-          const dialog = document.getElementById('new_wager_modal') as HTMLDialogElement
-          dialog.showModal()
+          if (!isConnected || address !== user.walletAddress) {
+            const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
+            dialog.showModal()
+          } else {
+            const dialog = document.getElementById('new_wager_modal') as HTMLDialogElement
+            dialog.showModal()
+          }
         }}
         variant="primary"
         tabIndex={0}
@@ -201,8 +290,9 @@ export default function NewWager({ user }: { user: User }) {
                 Stake
               </label>
               <input
+                type='number'
                 id="stake"
-                {...register('stake')}
+                {...register('stake', { valueAsNumber: true })}
                 placeholder="Stake"
                 className="input input-bordered w-full"
               />
@@ -338,21 +428,23 @@ export default function NewWager({ user }: { user: User }) {
         </div>
         <form method="dialog" className="modal-backdrop">
           <button>close</button>
-          <button>close</button>
         </form>
       </dialog>
 
       {/* sign in modal 2 */}
-      <dialog id="sign_in_modal_2" className="modal">
-        <div className={"modal-box w-[400px] absolute top-4 right-4 border bg-background border-muted shadow-lg"} >
-          <h3 className="font-bold text-lg">Sign In</h3>
-          <ul className="py-2 mt-1 rounded-2xl border shadow-xl hover:bg-base-100 w-72 animate-fade-in">
-            <SignInOptions />
-          </ul>
-        </div>
 
+      <dialog id="sign_in_modal" className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg"></h3>
+          <p className="py-4">Your wallet is not connected - sign in again before creating a new wager.</p>
+          <SignInOptions onSignIn={() => {
+            const dialog = document.getElementById('new_wager_modal') as HTMLDialogElement
+            dialog.showModal()
+
+          }} />
+        </div>
         <form method="dialog" className="modal-backdrop">
-          <button className="cursor-default">close</button>
+          <button>close</button>
         </form>
       </dialog>
     </div>

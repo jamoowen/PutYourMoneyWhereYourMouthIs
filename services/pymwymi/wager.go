@@ -58,7 +58,7 @@ type Wager struct {
 	Category        string            `bson:"category" json:"category"`
 	Description     string            `bson:"description" json:"description"`
 	Location        string            `bson:"location" json:"location"`
-	Stake           string            `bson:"stake" json:"stake"`
+	Stake           int64             `bson:"stake" json:"stake"`
 	Currency        string            `bson:"currency" json:"currency"`
 	Participants    []Player          `bson:"participants" json:"participants"`
 	Status          WagerStatus       `bson:"status" json:"status"`

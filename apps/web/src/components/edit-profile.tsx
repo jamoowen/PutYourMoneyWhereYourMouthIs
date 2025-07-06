@@ -98,7 +98,7 @@ export default function EditProfile() {
         </div>
 
         <form method="dialog" className="modal-backdrop">
-          <button className="cursor-default">close</button>
+          <button className="cursor-pointer">close</button>
         </form>
       </dialog>
     </>

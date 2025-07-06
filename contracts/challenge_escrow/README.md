@@ -6,3 +6,5 @@
 3. copy the abi from out/ChallengeEscrow.sol/ChallengeEscrow.json -> go backend && frontend locations
 
 backend location: contracts/
+
+address: 0x7c471fcf09959b8522760ca69bddf3c91900d834

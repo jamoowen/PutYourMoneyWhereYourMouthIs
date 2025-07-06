@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { cn, getAuthStatus } from '@/lib/utils' // optional utility for conditional classes
 import NewWager from './new-wager'
 import { cookies, headers } from 'next/headers'
+import WagersTabs from './wagers-tabs'
 
 export default async function WagersLayout({
   children,
@@ -20,7 +21,7 @@ export default async function WagersLayout({
     <div className='w-full flex flex-col max-w-[500px] items-center'>
       <div className='w-full '>
         <NewWager user={user} />
-
+        <WagersTabs />
       </div>
       <div className="tabs justify-between w-full tabs-border mb-4">
       </div>

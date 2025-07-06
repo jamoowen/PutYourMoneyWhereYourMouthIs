@@ -37,9 +37,10 @@ func (s *Server) mountWagerRoutes() {
 	prefix := "/wager"
 
 	r := chi.NewRouter()
-	r.With(s.authMiddleware).Get("/list", s.handleGetWagers)
-	r.With(s.authMiddleware).Get("/create", s.handleCreateWager)
-	r.With(s.authMiddleware).Get("/vote", s.handleVote)
+	r.With(s.authMiddleware).Get("/", s.handleGetWagers)
+	r.With(s.authMiddleware).Post("/create", s.handleCreateWager)
+	r.With(s.authMiddleware).Patch("/vote", s.handleVote)
+	r.With(s.authMiddleware).Patch("/claim", s.handleVote)
 
 	s.router.Mount(prefix, r)
 }
@@ -80,6 +81,18 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var maxStakeAmount int64 = s.blockchainService.FromUSDCLarge(1_000_000) // 1 mil
+	var minStakeAmount int64 = s.blockchainService.FromUSDCLarge(5)         // 5 dollars
+
+	stake, intError := strconv.ParseInt(c.Stake, 10, 64)
+	if intError != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", intError.Error()), "stake must be an integer in the smallest units of USDC")
+		return
+	}
+	if stake < minStakeAmount || stake > maxStakeAmount {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid stake: %d", stake), "stake must be between 5 and 1 mil USDC")
+		return
+	}
 	// light validation
 	// need to manually check that all the participants addresses are valid
 	// need to verify the stake is the correct amount
@@ -89,7 +102,6 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 		NewStringValidator("category", c.Category, CheckMaxChars(50), CheckMinChars(5)),
 		NewStringValidator("description", c.Description, CheckMaxChars(500), CheckMinChars(5)),
 		NewStringValidator("location", c.Location, CheckMaxChars(500), CheckMinChars(5)),
-		NewStringValidator("stake", c.Stake, CheckMaxChars(50), CheckMinChars(5)),
 		NewStringValidator("currency", c.Currency, CheckMaxChars(500), CheckMinChars(5)),
 	)
 	if err != nil {
@@ -97,14 +109,16 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// err is already handled in validator
+
 	wager, err := s.wagerService.CreateWager(r.Context(),
-		c.TransactionHash,
-		c.Name,
+		stake,
+		c.Currency,
 		c.Category,
 		c.Description,
 		c.Location,
-		c.Stake,
-		c.Currency,
+		c.Name,
+		c.TransactionHash,
 		c.ParticipantsAddresses,
 	)
 	if err != nil {

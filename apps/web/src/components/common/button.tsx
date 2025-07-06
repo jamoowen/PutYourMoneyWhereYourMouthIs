@@ -1,6 +1,5 @@
 // src/components/ui/Button.tsx
 import { ButtonHTMLAttributes } from 'react'
-import clsx from 'clsx'
 import { cn } from '@/lib/utils'
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'none'
@@ -20,13 +19,18 @@ export default function Button({
   children,
   ...props
 }: ButtonProps) {
-  const base = 'flex items-center gap-2 px-5 py-2 rounded-lg font-medium transition-all duration-200 cursor-pointer'
+  const base = 'relative isolate inline-flex items-center gap-2 px-5 py-2 rounded-lg font-medium cursor-pointer'
 
   const variants: Record<Variant, string> = {
     none: '',
-    primary: 'bg-gradient-to-r from-indigo-500 to-purple-600 text-foreground hover:shadow-lg',
-    secondary: 'bg-gray-800 text-white hover:bg-gray-700',
-    outline: 'border border-indigo-500 text-indigo-500 hover:text-foreground',
+    primary: 'bg-gradient-to-r from-indigo-500 to-purple-600 text-foreground hover:outline',
+    secondary: 'bg-gray-800 text-white hover:bg-gray-700  bg-gradient-to-br from-indigo-500 to-purple-600 bg-clip-text text-transparent hover:outline',
+    outline: cn(
+      'text-indigo-500 bg-transparent',
+      'before:absolute before:inset-0 before:rounded-lg before:p-[1px] before:bg-gradient-to-r before:from-indigo-500 before:to-purple-600 before:z-[-1] before:content-[""]',
+      'after:absolute after:inset-[1px] after:rounded-lg after:bg-background after:z-[-1]',
+      'hover:outline'
+    ),
     ghost: 'bg-transparent text-gray-400 hover:bg-gray-100 hover:text-indigo-500',
   }
 

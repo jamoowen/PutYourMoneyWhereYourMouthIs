@@ -3,6 +3,7 @@ import { getAuthStatus } from '@/lib/utils'
 import Link from 'next/link'
 import Notifications from '@/components/notifications'
 import UserProfile from '@/components/user-profile'
+import Text from '@/components/common/text'
 
 export default async function Nav() {
   const allCookies = await cookies()
@@ -17,7 +18,7 @@ export default async function Nav() {
         </div>
         <div className="navbar-center">
 
-          <Link href="/wagers" className=" text-lg font-bold cursor-pointer">Wagers</Link>
+          <Link href="/wagers" className=""><Text>Wagers</Text></Link>
         </div>
         <div className="navbar-end">
           <UserProfile user={user} />
