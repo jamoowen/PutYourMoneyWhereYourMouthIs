@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const WAGERS_ROUTES = [
-  { href: '/wagers/pending', label: 'In Progress' },
+  { href: '/wagers/pending', label: 'Pending' },
   { href: '/wagers/claimable', label: 'Claimable' },
   { href: '/wagers/received', label: 'Received' },
   { href: '/wagers/sent', label: 'Sent' },
@@ -13,12 +13,14 @@ const WAGERS_ROUTES = [
 ]
 
 export default function WagersTabs() {
-  const pathname = usePathname()
+  const pathname = usePathname().split('/').pop()
+  console.log(`pathname: ${pathname}`)
   return (
-    <div>
+    <div className="flex  justify-between">
       {WAGERS_ROUTES.map((route) => {
         const path = route.href.split('/').pop()
         const isActive = pathname === path
+        console.log(`isActive: ${isActive}`)
 
         return (
           <Link

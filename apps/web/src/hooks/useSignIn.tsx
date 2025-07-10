@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAccount, useConnect, useSignMessage } from 'wagmi'
 import { CreateConnectorFn } from '@wagmi/core'
 
-import { supportedWallets as SUPPORTED_WALLETS } from '@/lib/wallets'
+import { supportedWallets as SUPPORTED_WALLETS } from '@/lib/blockchain'
 import { hashMessage } from 'viem'
 import { useRouter } from 'next/navigation'
 

@@ -19,7 +19,7 @@ export default async function WagersLayout({
 
   return (
     <div className='w-full flex flex-col max-w-[500px] items-center'>
-      <div className='w-full '>
+      <div className='w-full flex flex-col space-y-4'>
         <NewWager user={user} />
         <WagersTabs />
       </div>

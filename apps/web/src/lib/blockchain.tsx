@@ -7,7 +7,7 @@ export const supportedWallets = [
   { name: 'MetaMask', image: <MetaMaskImage />, connector: metaMask() },
 ]
 
-type SupportedChain = 'Base';
+export type SupportedChain = 'Base';
 
 const chainIdMap: Record<SupportedChain, { mainnet: number; testnet: number }> = {
   Base: {
@@ -16,10 +16,11 @@ const chainIdMap: Record<SupportedChain, { mainnet: number; testnet: number }> =
   },
 };
 
-const tokenAddressMap: Record<string, Record<number, string | null>> = {
+// https://developers.circle.com/stablecoins/usdc-contract-addresses
+const tokenAddressMap: Record<string, Record<number, Address | null>> = {
   USDC: {
-    8453: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    84532: '0x...YourUSDCOnBaseSepolia',
+    8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    84532: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
   }
 }
 
@@ -42,30 +43,23 @@ export function fromUSDCSmall(value: string): string {
 
 type ValidChainId = 8453 | 84532;
 
-export function getChainId(chain: SupportedChain): Result<ValidChainId, Error> {
+export function getChainId(chain: SupportedChain): ValidChainId {
   const chainIds = chainIdMap[chain];
-  if (!chainIds) return err(new Error(`Chain ${chain} not found`));
-
   const env = process.env.NEXT_PUBLIC_ENVIRONMENT;
-  if (env === 'dev') return ok(chainIds.testnet as ValidChainId);
-  if (env === 'prod') return ok(chainIds.mainnet as ValidChainId);
 
-  return err(new Error(`Invalid environment: ${env}`));
+  return env === 'dev'
+    ? chainIds?.testnet as ValidChainId
+    : chainIds?.mainnet as ValidChainId;
 }
 
-export function getTokenAddress(token: string, chainId: number): Result<string, Error> {
-  const addresses = tokenAddressMap[token]
-  if (addresses == null) return err(new Error(`Token ${token} not found`))
-
-  const address = addresses[chainId]
-  if (address == null) return err(new Error(`Token ${token} not found on chain ${chainId}`))
-
-  return ok(address)
+export function getTokenAddress(token: string, chainId: number): Address {
+  const address = tokenAddressMap[token]?.[chainId]
+  return address ?? "" as Address
 }
 
-export function getPYMWYMIContractAddress(): Result<Address, Error> {
-  if (process.env.NEXT_PUBLIC_ENVIROMENT == 'dev') return ok("0x7c471fcf09959b8522760ca69bddf3c91900d834")
-  else if (process.env.NEXT_PUBLIC_ENVIROMENT == 'prod') return ok("0x7c471fcf09959b8522760ca69bddf3c91900d834")
-
-  return err(new Error(`Environment ${process.env.NEXT_PUBLIC_ENVIROMENT} not found`))
+export function getPYMWYMIContractAddress(): Address {
+  const env = process.env.NEXT_PUBLIC_ENVIRONMENT;
+  return env === "dev"
+    ? "0x7c471fcf09959b8522760ca69bddf3c91900d834"
+    : "0x7c471fcf09959b8522760ca69bddf3c91900d834"
 }
