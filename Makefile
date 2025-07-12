@@ -28,3 +28,14 @@ docker-build:
 	@echo "Building Docker images for backend services..."
 	docker build -t $(GO_BINARY) $(BACKEND_DIR)
 
+deploy-contract:
+	cd contracts/wager_escrow && \
+	./deploy/deploy.sh && \
+	echo "copying abi to go backend /contracts dir" && \
+	cd ../.. && \
+	cp -f contracts/wager_escrow/out/WagerEscrow.sol/WagerEscrow.json ./services/pymwymi/contracts/WagerEscrow.json && \
+	cp -f contracts/wager_escrow/out/WagerEscrow.sol/WagerEscrow.json ./apps/web/src/contracts/WagerEscrow.json && \
+	echo "generating go contract from abi" && \
+	cd services/pymwymi/contracts && \
+	jq .abi WagerEscrow.json > WagerEscrow.abi && \
+	abigen --abi WagerEscrow.abi --pkg contracts --type WagerEscrow --out wager_escrow.go

@@ -2,18 +2,18 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {ChallengeEscrow} from "../src/ChallengeEscrow.sol";
+import {WagerEscrow} from "../src/WagerEscrow.sol";
 
-contract DeployChallengeEscrowScript is Script {
+contract DeployWagerEscrowScript is Script {
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
         uint256 basisPoints = 100;
-        ChallengeEscrow escrow = new ChallengeEscrow(basisPoints);
+        WagerEscrow escrow = new WagerEscrow(basisPoints);
 
-        console.log("Deployed ChallengeEscrow at:", address(escrow));
+        console.log("Deployed WagerEscrow at:", address(escrow));
 
         vm.stopBroadcast();
     }

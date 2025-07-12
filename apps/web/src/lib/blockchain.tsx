@@ -1,28 +1,12 @@
 import MetaMaskImage from '@/images/metamask'
 import { err, ok, Result } from '@/types'
 import { metaMask } from '@wagmi/connectors'
-import { Address, formatUnits, parseUnits } from 'viem'
+import { Address, Chain, formatUnits, parseUnits } from 'viem'
+import { WagerEscrowAddressBaseMainnet, WagerEscrowAddressBaseTestnet, ChainEnvironment, ChainName, USDCAddressBaseTestnet, USDCAdressBaseMainnet, ChainId } from './constants'
 
 export const supportedWallets = [
   { name: 'MetaMask', image: <MetaMaskImage />, connector: metaMask() },
 ]
-
-export type SupportedChain = 'Base';
-
-const chainIdMap: Record<SupportedChain, { mainnet: number; testnet: number }> = {
-  Base: {
-    mainnet: 8453,
-    testnet: 84532,
-  },
-};
-
-// https://developers.circle.com/stablecoins/usdc-contract-addresses
-const tokenAddressMap: Record<string, Record<number, Address | null>> = {
-  USDC: {
-    8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    84532: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-  }
-}
 
 /**
  * @description for parsing a human readable usd amount and returning a string of the smallest unit of usdc
@@ -41,25 +25,34 @@ export function fromUSDCSmall(value: string): string {
   return formatUnits(bigIntVal, 6)
 }
 
-type ValidChainId = 8453 | 84532;
-
-export function getChainId(chain: SupportedChain): ValidChainId {
-  const chainIds = chainIdMap[chain];
-  const env = process.env.NEXT_PUBLIC_ENVIRONMENT;
-
-  return env === 'dev'
-    ? chainIds?.testnet as ValidChainId
-    : chainIds?.mainnet as ValidChainId;
+// type ValidChainIds = 8453 | 84532
+type ValidChainIds = typeof ChainId[keyof typeof ChainId]
+export function getChainId(chain: string): ValidChainIds {
+  const env = process.env.NEXT_PUBLIC_CHAIN_ENVIRONMENT;
+  switch (chain) {
+    case ChainName.Base:
+      return env === ChainEnvironment.Mainnet
+        ? ChainId.BaseMainnet
+        : ChainId.BaseTestnet;
+    default:
+      return ChainId.BaseTestnet
+  }
 }
 
 export function getTokenAddress(token: string, chainId: number): Address {
-  const address = tokenAddressMap[token]?.[chainId]
-  return address ?? "" as Address
+  switch (token) {
+    case "USDC":
+      return chainId === ChainId.BaseMainnet
+        ? USDCAdressBaseMainnet
+        : USDCAddressBaseTestnet
+    default:
+      return USDCAddressBaseTestnet
+  }
 }
 
 export function getPYMWYMIContractAddress(): Address {
-  const env = process.env.NEXT_PUBLIC_ENVIRONMENT;
-  return env === "dev"
-    ? "0x7c471fcf09959b8522760ca69bddf3c91900d834"
-    : "0x7c471fcf09959b8522760ca69bddf3c91900d834"
+  const env = process.env.NEXT_PUBLIC_CHAIN_ENVIRONMENT;
+  return env === ChainEnvironment.Mainnet
+    ? WagerEscrowAddressBaseMainnet
+    : WagerEscrowAddressBaseTestnet
 }

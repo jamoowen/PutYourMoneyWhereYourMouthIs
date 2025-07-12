@@ -1,0 +1,29 @@
+No files changed, compilation skipped
+Script ran successfully.
+
+== Logs ==
+  Deployed WagerEscrow at: 0xbc7CA0b61Eb1B0c22F7D93CEC3C993D6d7079645
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 84532
+
+Estimated gas price: 0.001000122 gwei
+
+Estimated total gas used for script: 4174472
+
+Estimated amount required: 0.000004174981285584 ETH
+
+==========================
+
+
+==========================
+
+ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+
+Transactions saved to: /Users/jamesowen/personal-projects/PutYourMoneyWhereYourMouthIs/contracts/wager_escrow/broadcast/DeployWagerEscrow.s.sol/84532/run-latest.json
+
+Sensitive values saved to: /Users/jamesowen/personal-projects/PutYourMoneyWhereYourMouthIs/contracts/wager_escrow/cache/DeployWagerEscrow.s.sol/84532/run-latest.json
+
