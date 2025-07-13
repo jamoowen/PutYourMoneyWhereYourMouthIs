@@ -13,13 +13,13 @@ import (
 )
 
 type Validator interface {
-	validate() error
+	Validate() error
 	getFieldName() string
 }
 
 func ValidateAll(validators ...Validator) *pymwymi.Error {
 	for _, v := range validators {
-		if err := v.validate(); err != nil {
+		if err := v.Validate(); err != nil {
 			return pymwymi.Errorf(pymwymi.ErrBadInput, "bad input (%s): %s", v.getFieldName(), err.Error())
 		}
 	}
@@ -51,7 +51,7 @@ func (v *IntegerValidator) getFieldName() string {
 	return v.fieldName
 }
 
-func (v *IntegerValidator) validate() error {
+func (v *IntegerValidator) Validate() error {
 	for _, fn := range v.validators {
 		if err := fn(v.value); err != nil {
 			return err
@@ -97,9 +97,11 @@ func CheckIsBetween[T string | int64](min, max int64) func(T) error {
 
 // ---------------------------------
 // String validators
+
 func NewStringValidator(fieldName string, value string, validators ...func(string) error) *StringValidator {
 	v := StringValidator{}
 	v.fieldName = fieldName
+	v.value = value
 	v.validators = validators
 	return &v
 }
@@ -108,7 +110,7 @@ func (v *StringValidator) getFieldName() string {
 	return v.fieldName
 }
 
-func (v *StringValidator) validate() error {
+func (v *StringValidator) Validate() error {
 	for _, fn := range v.validators {
 		if err := fn(v.value); err != nil {
 			return err

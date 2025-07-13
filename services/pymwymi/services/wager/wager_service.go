@@ -79,9 +79,7 @@ func (s *Service) CreateWager(ctx context.Context,
 			WalletAddress: address,
 		}
 	}
-	participants[len(participants)] = pymwymi.Player{
-		WalletAddress: creator,
-	}
+	participants = append(participants, pymwymi.Player{WalletAddress: creator})
 
 	status := pymwymi.StateCreated
 	creationStatus := pymwymi.InteractionStatePending

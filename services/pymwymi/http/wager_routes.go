@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
-	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 
@@ -98,14 +97,13 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 	// light validation
 	// need to manually check that all the participants addresses are valid
 	// need to verify the stake is the correct amount
-	fmt.Printf("length of transactionhash: %v\n", utf8.RuneCountInString(newWagerPayload.TransactionHash))
 	err := ValidateAll(
 		NewStringValidator("transactionHash", newWagerPayload.TransactionHash, CheckMaxChars(66), CheckMinChars(66)),
-		NewStringValidator("name", newWagerPayload.Name, CheckMaxChars(50), CheckMinChars(5)),
-		NewStringValidator("category", newWagerPayload.Category, CheckMaxChars(50), CheckMinChars(5)),
-		NewStringValidator("description", newWagerPayload.Description, CheckMaxChars(500), CheckMinChars(5)),
-		NewStringValidator("location", newWagerPayload.Location, CheckMaxChars(500), CheckMinChars(5)),
-		NewStringValidator("currency", newWagerPayload.Currency, CheckMaxChars(500), CheckMinChars(5)),
+		NewStringValidator("name", newWagerPayload.Name, CheckMaxChars(50), CheckMinChars(3)),
+		NewStringValidator("category", newWagerPayload.Category, CheckMaxChars(50), CheckMinChars(3)),
+		NewStringValidator("description", newWagerPayload.Description, CheckMaxChars(500)),
+		NewStringValidator("location", newWagerPayload.Location, CheckMaxChars(500)),
+		NewStringValidator("currency", newWagerPayload.Currency, CheckMaxChars(500), CheckMinChars(3)),
 	)
 	if err != nil {
 		log.Printf("err: %v\npayload: %v", err, newWagerPayload)

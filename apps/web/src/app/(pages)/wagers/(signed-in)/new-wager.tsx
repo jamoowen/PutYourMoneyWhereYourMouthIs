@@ -27,6 +27,9 @@ type NewWagerPayload = {
   participantsAddresses: string[]
 }
 
+const MIN_STAKE = 1
+const MAX_STAKE = 1_000_000
+
 // Create Zod enum dynamically from categories array
 const categoryEnum = z.enum(categories)
 
@@ -42,7 +45,7 @@ const newChallengeSchema = z.object({
   category: categoryEnum,
   description: z.string().max(500, `Chill, thats enough info.`).optional(),
   location: z.string().max(100, `There's no way that is a real place.`).optional(),
-  stake: z.number().min(1, 'Required').max(1_000_000, `You're not that rich. Be real`),
+  stake: z.number().min(MIN_STAKE, 'Required').max(MAX_STAKE, `You're not that rich. Be real`),
   currency: z.literal('USDC'),
   chain: z.literal('Base'),
   participantsAddresses: z
@@ -64,7 +67,7 @@ export default function NewWager({ user }: { user: User }) {
     category: categories[0], // default to first category
     description: '',
     location: '',
-    stake: "5",
+    stake: MIN_STAKE.toString(),
     currency: 'USDC',
     chain: "Base",
     participantsAddresses: [], // One participant by default
@@ -122,7 +125,7 @@ export default function NewWager({ user }: { user: User }) {
       category: categories[0], // default to first category
       description: '',
       location: '',
-      stake: 5,
+      stake: MIN_STAKE,
       currency: 'USDC',
       chain: "Base",
       participantsAddresses: [], // One participant by default
@@ -176,15 +179,13 @@ export default function NewWager({ user }: { user: User }) {
     }
     setIsCreateWagerLoading(true)
     try {
-      if (data.stake == null || data.stake < 1) {
+      if (data.stake == null || data.stake < MIN_STAKE || data.stake > MAX_STAKE) {
         return
       }
       const stakeAmount = toWeiUSDC(data.stake.toString())
       if (balance == null || balance.value < BigInt(stakeAmount)) {
         throw new WagerError('Insufficient balance')
       }
-
-      console.log(`Writing to WITH PYMWYMI`, stakeAmount, tokenAddress, data.participantsAddresses)
 
       setNewWagerData({
         transactionHash: '',
@@ -385,9 +386,10 @@ export default function NewWager({ user }: { user: User }) {
               </label>
               <input
                 max={fromWeiUSDC(balance?.value.toString() ?? "0")}
+                min={MIN_STAKE}
                 type='number'
                 id="stake"
-                {...register('stake', { valueAsNumber: true })}
+                {...register('stake', { valueAsNumber: true, min: MIN_STAKE })}
                 placeholder="Stake"
                 className="input input-bordered w-full"
                 onChange={(e) => setStake(e.target.value)}
