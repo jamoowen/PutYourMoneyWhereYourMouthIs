@@ -13,7 +13,8 @@ const SIGNED_UP = "SIGNED_UP"
 const SIGNED_IN = "SIGNED_IN"
 
 /**
- * @TODO if auth response is SIGNED_UP -> we need to prompt user with another form to add name
+ * @TODO  maybe we shouldnt enforce user to sign transaction agin 
+ * if they are already have a token? then just connect wallet
  */
 export default function SignInOptions({ onSignIn }: { onSignIn?: () => void }) {
   const router = useRouter()

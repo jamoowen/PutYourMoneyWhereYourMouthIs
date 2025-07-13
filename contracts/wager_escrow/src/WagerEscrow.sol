@@ -112,7 +112,6 @@ contract WagerEscrow is ReentrancyGuard {
             wager.participants[_participants[i]] = Participant(_participants[i], 0, false);
             wager.participantArray.push(_participants[i]);
         }
-
         emit WagerCreated(id, msg.sender);
         return id;
     }

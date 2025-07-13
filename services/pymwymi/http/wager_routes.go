@@ -3,9 +3,11 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 
@@ -22,7 +24,7 @@ type AcceptDTO struct {
 	StakeSignature string `json:"stakeSignature"`
 }
 
-type NewWagerDto struct {
+type NewWagerPayload struct {
 	TransactionHash       string   `json:"transactionHash"`
 	Name                  string   `json:"name"`
 	Category              string   `json:"category"`
@@ -73,38 +75,40 @@ func (s *Server) handleGetWagers(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 	// need to pass from user, participants, name, description, currency, amount, transactionHash,
 	// 10 Kib
-	var c NewWagerDto
+	var newWagerPayload NewWagerPayload
 
 	r.Body = http.MaxBytesReader(w, r.Body, 10*1024)
-	if decodeErr := json.NewDecoder(r.Body).Decode(&c); decodeErr != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&newWagerPayload); decodeErr != nil {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", decodeErr.Error()), "bad payload")
 		return
 	}
 
-	var maxStakeAmount int64 = s.blockchainService.FromUSDCLarge(1_000_000) // 1 mil
-	var minStakeAmount int64 = s.blockchainService.FromUSDCLarge(5)         // 5 dollars
+	var maxStakeAmount int64 = s.blockchainService.ToWeiUSDC(1_000_000) // 1 mil
+	var minStakeAmount int64 = s.blockchainService.ToWeiUSDC(1)         // 5 dollars
 
-	stake, intError := strconv.ParseInt(c.Stake, 10, 64)
+	stake, intError := strconv.ParseInt(newWagerPayload.Stake, 10, 64)
 	if intError != nil {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", intError.Error()), "stake must be an integer in the smallest units of USDC")
 		return
 	}
 	if stake < minStakeAmount || stake > maxStakeAmount {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid stake: %d", stake), "stake must be between 5 and 1 mil USDC")
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid stake: %d", stake), "stake must be between $1 and $1 mil")
 		return
 	}
 	// light validation
 	// need to manually check that all the participants addresses are valid
 	// need to verify the stake is the correct amount
+	fmt.Printf("length of transactionhash: %v\n", utf8.RuneCountInString(newWagerPayload.TransactionHash))
 	err := ValidateAll(
-		NewStringValidator("transactionHash", c.TransactionHash, CheckMaxChars(66), CheckMinChars(66)),
-		NewStringValidator("name", c.Name, CheckMaxChars(50), CheckMinChars(5)),
-		NewStringValidator("category", c.Category, CheckMaxChars(50), CheckMinChars(5)),
-		NewStringValidator("description", c.Description, CheckMaxChars(500), CheckMinChars(5)),
-		NewStringValidator("location", c.Location, CheckMaxChars(500), CheckMinChars(5)),
-		NewStringValidator("currency", c.Currency, CheckMaxChars(500), CheckMinChars(5)),
+		NewStringValidator("transactionHash", newWagerPayload.TransactionHash, CheckMaxChars(66), CheckMinChars(66)),
+		NewStringValidator("name", newWagerPayload.Name, CheckMaxChars(50), CheckMinChars(5)),
+		NewStringValidator("category", newWagerPayload.Category, CheckMaxChars(50), CheckMinChars(5)),
+		NewStringValidator("description", newWagerPayload.Description, CheckMaxChars(500), CheckMinChars(5)),
+		NewStringValidator("location", newWagerPayload.Location, CheckMaxChars(500), CheckMinChars(5)),
+		NewStringValidator("currency", newWagerPayload.Currency, CheckMaxChars(500), CheckMinChars(5)),
 	)
 	if err != nil {
+		log.Printf("err: %v\npayload: %v", err, newWagerPayload)
 		handlePYMWYMIError(w, err, fmt.Sprintf("bad payload: %s", err.Error()))
 		return
 	}
@@ -113,13 +117,13 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 
 	wager, err := s.wagerService.CreateWager(r.Context(),
 		stake,
-		c.Currency,
-		c.Category,
-		c.Description,
-		c.Location,
-		c.Name,
-		c.TransactionHash,
-		c.ParticipantsAddresses,
+		newWagerPayload.Currency,
+		newWagerPayload.Category,
+		newWagerPayload.Description,
+		newWagerPayload.Location,
+		newWagerPayload.Name,
+		newWagerPayload.TransactionHash,
+		newWagerPayload.ParticipantsAddresses,
 	)
 	if err != nil {
 		handlePYMWYMIError(w, err, "failed to create wager")

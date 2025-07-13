@@ -150,7 +150,7 @@ func NotBlank() func(string) error {
 // Checks if a string has at least n chars.
 func CheckMinChars(minChars int) func(string) error {
 	return func(value string) error {
-		if utf8.RuneCountInString(value) <= minChars {
+		if utf8.RuneCountInString(value) < minChars {
 			return fmt.Errorf("this field must be at least %d characters long", minChars)
 		}
 		return nil

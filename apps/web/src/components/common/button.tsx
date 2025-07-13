@@ -32,7 +32,7 @@ export default function Button({
     ghost: 'bg-transparent text-gray-400 hover:bg-gray-100 hover:text-indigo-500',
   }
 
-  const disabledClasses = 'text-red-500 opacity-50 pointer-events-none'
+  const disabledClasses = 'opacity-50 pointer-events-none'
 
   return (
     <button

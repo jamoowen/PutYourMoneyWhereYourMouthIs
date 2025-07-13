@@ -12,7 +12,7 @@ export const supportedWallets = [
  * @description for parsing a human readable usd amount and returning a string of the smallest unit of usdc
  * @returns string => the smallest unit of usdc
  */
-export function fromUSDCLarge(value: string): string {
+export function toWeiUSDC(value: string): string {
   return parseUnits(value, 6).toString()
 }
 
@@ -20,7 +20,7 @@ export function fromUSDCLarge(value: string): string {
  * @description for parsing a string of the smallest unit of usdc and returning a human readable usd amount
  * @returns string => the largest unit of usdc
  */
-export function fromUSDCSmall(value: string): string {
+export function fromWeiUSDC(value: string): string {
   const bigIntVal = BigInt(value)
   return formatUnits(bigIntVal, 6)
 }

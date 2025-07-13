@@ -68,10 +68,10 @@ func AuthenticateSignature(walletAddress string, signatureHex string, originalMe
 	return true, nil
 }
 
-func (s *Service) FromUSDCLarge(value int64) int64 {
+func (s *Service) ToWeiUSDC(value int64) int64 {
 	return value * 1_000_000 // 10^6
 }
 
-func (s *Service) ToUSDCLarge(value int64) int64 {
+func (s *Service) FromWeiUSDC(value int64) int64 {
 	return value / 1_000_000
 }

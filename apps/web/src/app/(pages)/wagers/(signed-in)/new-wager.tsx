@@ -9,11 +9,11 @@ import { categories } from '@/lib/wager-categories'  // Your categories array he
 import Image from 'next/image'
 import SignInOptions from '@/components/sign-in-options'
 import contractJson from '@/contracts/WagerEscrow.json' assert { type: 'json' }
-import { User } from '@/types'
+import { extendedErc20Abi } from '@/contracts/ExtendedERC20ABI'
+import { User, WagerError } from '@/types'
 import { Abi, Address, erc20Abi } from 'viem'
-import { fromUSDCLarge, getTokenAddress, getChainId, getPYMWYMIContractAddress, fromUSDCSmall } from '@/lib/blockchain'
+import { toWeiUSDC, getTokenAddress, getChainId, getPYMWYMIContractAddress, fromWeiUSDC } from '@/lib/blockchain'
 import { useAccount, useSwitchChain, useWriteContract, useReadContract, useBalance } from 'wagmi'
-import { getConfig } from '@/wagmi'
 
 type NewWagerPayload = {
   transactionHash: string
@@ -70,28 +70,28 @@ export default function NewWager({ user }: { user: User }) {
     participantsAddresses: [], // One participant by default
   })
   const [stake, setStake] = useState(newWagerData.stake)
-  const [isStakeApproved, setIsStakeApproved] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isCreateWagerLoading, setIsCreateWagerLoading] = useState(false)
 
   const { address, isConnected, chainId } = useAccount()
   const {
     data: createWagerHash,
     writeContract: writeContractCreateWager,
-    isSuccess: isCreateWagerSuccess,
     error: createWagerError,
-    failureReason: createWagerFailureReason,
-    status: createWagerStatus,
+  } = useWriteContract({})
+  const {
+    writeContract: writeContractApprove,
+    error: approveError
   } = useWriteContract({
-    mutation: { onSuccess: postNewWagerResultToBackend }
-  })
-  const { data: approveHash, writeContract: writeContractApprove, isSuccess: isApproveSuccess, error: approveError } = useWriteContract({
     mutation: { onSuccess: interactWithPYMWYMIContract, onError: logError }
   })
-  const { data: balance } = useBalance({
+  const {
+    data: balance
+  } = useBalance({
     address: address as `0x${string}`,
     token: getTokenAddress(newWagerData.currency, getChainId(newWagerData.chain)),
   })
-  const { switchChain, switchChainAsync, chains, error: switchChainError, isPending: isSwitchChainPending } = useSwitchChain()
+  const { switchChain } = useSwitchChain()
 
   const selectedChainId = getChainId(newWagerData.chain)
   const contractAddress = getPYMWYMIContractAddress()
@@ -107,14 +107,14 @@ export default function NewWager({ user }: { user: User }) {
     },
   })
 
-  const config = getConfig()
+  console.log(`ALLOWANCE: ${allowance}, tokenaddress: ${tokenAddress}, contractAddress: ${contractAddress}, address: ${address}`)
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     control,
-    watch,
+    reset: resetForm,
   } = useForm<NewChallengeForm>({
     resolver: zodResolver(newChallengeSchema),
     defaultValues: {
@@ -135,31 +135,53 @@ export default function NewWager({ user }: { user: User }) {
     name: 'participantsAddresses',
   })
 
+
+  useEffect(() => {
+    if (createWagerHash == null) {
+      return
+    }
+    postNewWagerResultToBackend(newWagerData, createWagerHash)
+  }, [createWagerHash])
+
+  useEffect(() => {
+    if (createWagerError == null) {
+      return
+    }
+    setSubmitError("Create new wager transaction failed")
+    setIsCreateWagerLoading(false)
+  }, [createWagerError])
+
+  useEffect(() => {
+    if (approveError == null) {
+      return
+    }
+    setSubmitError("Approve spending failed failed")
+    setIsCreateWagerLoading(false)
+  }, [approveError])
+
+  /**
+   * @TODO we might want to use increaseAllowance instead of approve
+   * if allowance is reset after each transfer
+   */
   // 0 if no wallet connected - sign inn flow
   // 1. open transaction and force user to stake
   // 2. onsuccess, we want to post the result to our backend.
   // 3. backend ABSOLUTELY needs to receive this info
-  // 4. 
-
-
   async function onSubmit(data: NewChallengeForm) {
     console.log('SUBMITTING', JSON.stringify(data))
-
     if (!isConnected || address !== user.walletAddress) {
       const dialog = document.getElementById('sign_in_modal_2') as HTMLDialogElement
       dialog.showModal()
       return
     }
-
-
-
+    setIsCreateWagerLoading(true)
     try {
-
-      const stakeAmount = fromUSDCLarge(data.stake.toString())
-
-      console.log(`Balance: `, balance?.value, BigInt(stakeAmount))
+      if (data.stake == null || data.stake < 1) {
+        return
+      }
+      const stakeAmount = toWeiUSDC(data.stake.toString())
       if (balance == null || balance.value < BigInt(stakeAmount)) {
-        throw new Error('Not enough balance')
+        throw new WagerError('Insufficient balance')
       }
 
       console.log(`Writing to WITH PYMWYMI`, stakeAmount, tokenAddress, data.participantsAddresses)
@@ -181,31 +203,32 @@ export default function NewWager({ user }: { user: User }) {
         switchChain({ chainId: selectedChainId })
       }
 
-      const selectedTokenAddress = getTokenAddress(data.currency, selectedChainId)
       // Check allowance
       // if we need to approve allowance first thats fine
-      // interactWithPYMWYMIContract is passed to its onSuccess
+      // interactWithPYMWYMIContract is passed to its onSuccess so we can return early
+      console.log(`allowance: ${allowance}, stakeAmount: ${stakeAmount}, address: ${tokenAddress}, contractAddress: ${contractAddress}, stakeAmount: ${stakeAmount}`)
       if (!allowance || allowance < BigInt(stakeAmount)) {
-        // if (true) {
-        console.log(`Needs approvale`)
+        const increaseAmount = BigInt(stakeAmount) - BigInt(allowance ?? 0)
         writeContractApprove({
           address: tokenAddress,
-          abi: erc20Abi,
-          functionName: 'approve',
-          args: [contractAddress, BigInt(stakeAmount)],
+          abi: extendedErc20Abi,
+          functionName: 'increaseAllowance',
+          args: [contractAddress, increaseAmount],
         })
-        return
       } else {
-        console.log(`writing contract: `, contractAddress, tokenAddress, data.participantsAddresses, stakeAmount)
         interactWithPYMWYMIContract()
       }
     } catch (err) {
-      console.error('Create Wager Failed:', err)
+      if (err instanceof WagerError) {
+        setSubmitError(err.message)
+      } else {
+        console.log(`ERROR submitting: ${err}`)
+      }
+      setIsCreateWagerLoading(false)
     }
   }
 
   async function interactWithPYMWYMIContract() {
-    console.log(`INTERACTING WITH PYMWYMI`, newWagerData.stake, tokenAddress, newWagerData.participantsAddresses)
     writeContractCreateWager({
       address: contractAddress,
       abi: contractJson.abi as Abi,
@@ -218,19 +241,15 @@ export default function NewWager({ user }: { user: User }) {
     })
   }
 
-  async function postNewWagerResultToBackend() {
-    console.log(`POSTING TO BACKEND`, createWagerHash)
-    if (!isCreateWagerSuccess || !createWagerHash) {
-      console.log(`status: ${createWagerStatus}, reason: ${createWagerFailureReason}, error: ${createWagerError?.message}`)
-      return
-    }
-    console.log(`hash: ${createWagerHash}`)
+  /**
+   * @TODO add toast notification
+   */
+  async function postNewWagerResultToBackend(newWager: NewWagerPayload, hash: Address) {
     try {
       const payload = {
-        ...newWagerData,
-        transactionHash: createWagerHash
+        ...newWager,
+        transactionHash: hash
       }
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,9 +258,16 @@ export default function NewWager({ user }: { user: User }) {
       })
       const responseData = await response.json()
       console.log(`RES: ${response.status}, ${response.statusText},${JSON.stringify(responseData)}`)
-      if (!response.ok) throw new Error('Failed to create challenge')
+      if (!response.ok) {
+        throw new WagerError('Failed to post new wager to backend')
+      }
     } catch (err) {
       console.error(err)
+    } finally {
+      setIsCreateWagerLoading(false)
+      const dialog = document.getElementById('new_wager_modal') as HTMLDialogElement
+      dialog.close()
+      resetForm()
     }
   }
 
@@ -358,7 +384,7 @@ export default function NewWager({ user }: { user: User }) {
                 Stake
               </label>
               <input
-                max={fromUSDCSmall(balance?.value.toString() ?? "0")}
+                max={fromWeiUSDC(balance?.value.toString() ?? "0")}
                 type='number'
                 id="stake"
                 {...register('stake', { valueAsNumber: true })}
@@ -479,15 +505,19 @@ export default function NewWager({ user }: { user: User }) {
                 )
               )}
             </div>
-            <div className="modal-action">
-              {/* <Button type="button" onClick={interactWithPYMWYMIContract} disabled={isSubmitting}> */}
-              {/*   Approve */}
-              {/* </Button> */}
-              <Button type="button" onClick={handleSubmit(onSubmit)}
+            {submitError &&
+              <p className='text-red-500'>
+                {submitError}
+              </p>
+            }
+            <div className="modal-action flex items-end">
+              <Button type="button"
+                onClick={handleSubmit(onSubmit)}
+                isLoading={isCreateWagerLoading}
                 disabled={
                   isSubmitting ||
                   balance == null ||
-                  balance.value < BigInt(fromUSDCLarge(stake))
+                  balance.value < BigInt(toWeiUSDC(stake))
                 }
               >
                 Submit
@@ -511,7 +541,6 @@ export default function NewWager({ user }: { user: User }) {
       </dialog>
 
       {/* sign in modal 2 */}
-
       <dialog id="sign_in_modal" className="modal">
         <div className="modal-box">
           <h3 className="font-bold text-lg"></h3>
