@@ -2,11 +2,17 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi/services/auth"
+)
+
+const (
+	DefaultPageNumber = 1
+	DefaultPageLimit  = 20
 )
 
 // extracts page and limit from query params and adds to ctx
@@ -16,11 +22,11 @@ func paginate(next http.Handler) http.Handler {
 		q := r.URL.Query()
 		page, err := strconv.ParseInt(q.Get("page"), 10, 64)
 		if err != nil || page < 1 {
-			page = 1
+			page = DefaultPageNumber
 		}
 		limit, err := strconv.ParseInt(q.Get("limit"), 10, 64)
 		if err != nil || limit <= 0 || limit > 100 {
-			limit = 20
+			limit = DefaultPageLimit
 		}
 		ctx := context.WithValue(r.Context(), pymwymi.PaginationKey, pymwymi.PageOpts{Page: page, Limit: limit})
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -30,6 +36,7 @@ func paginate(next http.Handler) http.Handler {
 func authMiddleware(authService *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("cookies: %v\n", r.Cookies())
 			cookie, err := r.Cookie("pymwymi_auth_token")
 			if err != nil {
 				http.Error(w, "Unauthorized: missing auth cookie", http.StatusUnauthorized)

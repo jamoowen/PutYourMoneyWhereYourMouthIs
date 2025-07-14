@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -21,9 +20,10 @@ func NewWagerStore(client *mongo.Client, dbName string) *WagerStorage {
 }
 
 func (s *WagerStorage) CreateWager(ctx context.Context, wager pymwymi.Wager) *pymwymi.Error {
+	now := pymwymi.IsoNow()
 	persistedWager := pymwymi.PersistedWager{
-		CreatedAt: pymwymi.IsoNow(),
-		UpdatedAt: pymwymi.IsoNow(),
+		CreatedAt: now,
+		UpdatedAt: now,
 		Wager:     wager,
 	}
 	_, err := s.c.InsertOne(ctx, persistedWager)
@@ -34,7 +34,7 @@ func (s *WagerStorage) CreateWager(ctx context.Context, wager pymwymi.Wager) *py
 }
 
 // this has race conditions and is important to only allow a single vote to make it through
-func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id string, wager pymwymi.Wager) *pymwymi.Error {
+func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id string, wager *pymwymi.PersistedWager) *pymwymi.Error {
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return pymwymi.Errorf(pymwymi.ErrBadInput, "invalid wager id (%v): %v", id, err)
@@ -44,10 +44,12 @@ func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id string, wager
 		{Key: "_id", Value: objectId},
 		{Key: "status", Value: bson.D{{Key: "$in", Value: validStatuses}}},
 	}
-	update := bson.D{bson.E{Key: "$set", Value: bson.D{
-		bson.E{Key: "status", Value: wager.Status},
-		bson.E{Key: "participants", Value: wager.Participants},
-	}}}
+	update := bson.M{
+		"$set": bson.M{
+			"status":       wager.Status,
+			"participants": wager.Participants,
+		},
+	}
 	result, err := s.c.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return pymwymi.Errorf(pymwymi.ErrInternal, "failed to update wager (%v): %v", id, err)
@@ -61,39 +63,22 @@ func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id string, wager
 	return nil
 }
 
-func (s *WagerStorage) UpdateWager(ctx context.Context, id string, fieldsToSet []pymwymi.FieldToSet) error {
-	objectId, err := bson.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	filter := bson.D{bson.E{Key: "_id", Value: objectId}}
-	setDoc := bson.D{}
-	for _, field := range fieldsToSet {
-		setDoc = append(setDoc, bson.E{Key: field.Field, Value: field.Value})
-	}
-	_, err = s.c.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: setDoc}})
-	if err != nil {
-		return fmt.Errorf("failed to update wager (%v): %w", id, err)
-	}
-	return nil
-}
-
 // we need to handle not found and a genuine db error differently
-func (s *WagerStorage) GetWagerByID(ctx context.Context, id string) (pymwymi.PersistedWager, *pymwymi.Error) {
+func (s *WagerStorage) GetWagerByID(ctx context.Context, id string) (*pymwymi.PersistedWager, *pymwymi.Error) {
 	var wager pymwymi.PersistedWager
 	objectId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return wager, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid wager id (%v): %v", id, err)
+		return nil, pymwymi.Errorf(pymwymi.ErrBadInput, "invalid wager id (%v): %v", id, err)
 	}
 	filter := bson.D{bson.E{Key: "_id", Value: objectId}}
 	err = s.c.FindOne(ctx, filter).Decode(&wager)
 	if err == mongo.ErrNoDocuments {
-		return wager, pymwymi.Errorf(pymwymi.ErrWagerNotFound, "wager (%v) not found", id)
+		return nil, pymwymi.Errorf(pymwymi.ErrWagerNotFound, "wager (%v) not found", id)
 	}
 	if err != nil {
-		return wager, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get wager (%v): %v", id, err)
+		return nil, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get wager (%v): %v", id, err)
 	}
-	return wager, nil
+	return &wager, nil
 }
 
 // you can submit an empty walletAddress but not an empty status
@@ -101,24 +86,24 @@ func (s *WagerStorage) GetWagersByStatus(
 	ctx context.Context,
 	walletAddress string,
 	status pymwymi.WagerStatus,
-	pageOpts pymwymi.PageOpts,
-) ([]pymwymi.PersistedWager, error) {
+	pageOpts *pymwymi.PageOpts,
+) ([]pymwymi.PersistedWager, *pymwymi.Error) {
 	result := []pymwymi.PersistedWager{}
 	filter := bson.D{bson.E{Key: "status", Value: status}}
 	if walletAddress != "" {
-		filter = append(filter, bson.E{Key: "walletAddress", Value: walletAddress})
+		filter = append(filter, bson.E{Key: "participants.walletAddress", Value: walletAddress})
 	}
 	options := setPageOptions(options.Find(), pageOpts)
 	cursor, err := s.c.Find(ctx, filter, options)
 	if err != nil {
-		return result, fmt.Errorf("failed to get wagers: %w", err)
+		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get wagers: %s", err.Error())
 	}
 	cursor.All(ctx, &result)
 	return result, nil
 }
 
 // if you pass 0 for page and limit it will return all
-func setPageOptions(opts *options.FindOptionsBuilder, p pymwymi.PageOpts) *options.FindOptionsBuilder {
+func setPageOptions(opts *options.FindOptionsBuilder, p *pymwymi.PageOpts) *options.FindOptionsBuilder {
 	if p.Page != 0 && p.Limit != 0 {
 		opts.SetSkip((p.Page - 1) * p.Limit)
 	}

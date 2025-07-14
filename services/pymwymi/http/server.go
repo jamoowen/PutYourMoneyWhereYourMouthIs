@@ -1,6 +1,8 @@
 package http
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -70,6 +72,29 @@ func NewServer(uS *user.Service, cS *wager.Service, bS *blockchain.Service, aS *
 	s.mountWagerRoutes()
 
 	return s
+}
+
+type Pagination struct {
+	More        bool  `json:"more"`
+	CurrentPage int64 `json:"currentPage"`
+}
+
+type PYMWYMIResponse[T any] struct {
+	Pagination *Pagination `json:"pagination,omitempty"`
+	Data       T           `json:"data"`
+}
+
+func NewPYMWYMIResponse[T any](ctx context.Context, data T, pagination *Pagination, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	response := PYMWYMIResponse[T]{
+		Pagination: pagination,
+		Data:       data,
+	}
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Printf("failed to encode response: %v", err)
+	}
 }
 
 func AllowOriginFunc(r *http.Request, origin string) bool {

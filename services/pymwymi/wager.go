@@ -50,7 +50,6 @@ type Player struct {
 }
 
 type Wager struct {
-	ID              string            `bson:"_id" json:"_id"`
 	TransactionHash string            `bson:"transactionHash" json:"transactionHash"`
 	Creator         string            `bson:"creator" json:"creator"`
 	CreationStatus  InteractionStatus `bson:"creationStatus" json:"creationStatus"`
@@ -66,6 +65,7 @@ type Wager struct {
 }
 
 type PersistedWager struct {
+	ID        string `bson:"_id" json:"_id"`
 	CreatedAt string `json:"createdAt" bson:"createdAt"`
 	UpdatedAt string `json:"updatedAt" bson:"updatedAt"`
 	Wager     `bson:",inline" json:",inline"`

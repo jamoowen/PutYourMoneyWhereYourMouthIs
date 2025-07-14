@@ -27,10 +27,10 @@ func (s *Service) GetWager(ctx context.Context, id string) (*pymwymi.Wager, erro
 	return &persistedWager.Wager, nil
 }
 
-func (s *Service) GetWagerForParticipant(ctx context.Context, id string, walletAddress string) (pymwymi.Wager, *pymwymi.Error) {
+func (s *Service) GetWagerForParticipant(ctx context.Context, id string, walletAddress string) (*pymwymi.PersistedWager, *pymwymi.Error) {
 	persistedWager, err := s.wagerStorage.GetWagerByID(ctx, id)
 	if err != nil {
-		return pymwymi.Wager{}, err
+		return nil, pymwymi.Errorf(err.Code, "failed to get wager by id: %s", err.Message)
 	}
 	isParticipant := false
 	for _, participant := range persistedWager.Participants {
@@ -40,24 +40,17 @@ func (s *Service) GetWagerForParticipant(ctx context.Context, id string, walletA
 		}
 	}
 	if isParticipant == false {
-		return pymwymi.Wager{}, pymwymi.Errorf(pymwymi.ErrNotParticipant, "not a participant in this wager")
+		return nil, pymwymi.Errorf(pymwymi.ErrNotParticipant, "not a participant in this wager")
 	}
-	return persistedWager.Wager, nil
+	return persistedWager, nil
 }
 
-func (s *Service) GetWagersForUser(ctx context.Context, status pymwymi.WagerStatus) ([]pymwymi.Wager, error) {
-	pageOpts := pymwymi.GetPageOptsFromCtx(ctx)
-	walletAddress := pymwymi.GetUserFromCtx(ctx).WalletAddress
+func (s *Service) GetWagersForUser(ctx context.Context, pageOpts *pymwymi.PageOpts, status pymwymi.WagerStatus, walletAddress string) ([]pymwymi.PersistedWager, *pymwymi.Error) {
 	persistedWagers, err := s.wagerStorage.GetWagersByStatus(ctx, walletAddress, status, pageOpts)
 	if err != nil {
-		return nil, err
+		return nil, pymwymi.Errorf(err.Code, "failed to get wagers by status: %s", err.Message)
 	}
-	// adapt
-	wagers := make([]pymwymi.Wager, len(persistedWagers))
-	for i, persistedWager := range persistedWagers {
-		wagers[i] = persistedWager.Wager
-	}
-	return wagers, nil
+	return persistedWagers, nil
 }
 
 // @DEV I thought we should store the pymwymi users on the record but just walletAddress is probably fine
@@ -123,7 +116,7 @@ func (s *Service) CreateWager(ctx context.Context,
 // if nobody accepts then the creator should be allowed to cancel
 // if votes are unanimous we can cancel the wager
 // we are handling race condtions in the mongo operation
-func (s *Service) SubmitVote(ctx context.Context, user pymwymi.User, wager pymwymi.Wager, vote pymwymi.Vote) *pymwymi.Error {
+func (s *Service) SubmitVote(ctx context.Context, user pymwymi.User, wager *pymwymi.PersistedWager, vote pymwymi.Vote) *pymwymi.Error {
 	unanimousVotes := true
 	for i, participant := range wager.Participants {
 		if !participant.HasStaked {

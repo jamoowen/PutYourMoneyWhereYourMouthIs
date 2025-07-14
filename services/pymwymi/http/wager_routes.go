@@ -38,7 +38,7 @@ func (s *Server) mountWagerRoutes() {
 	prefix := "/wager"
 
 	r := chi.NewRouter()
-	r.With(s.authMiddleware).Get("/", s.handleGetWagers)
+	r.With(s.authMiddleware).Get("/list", s.handleGetWagers)
 	r.With(s.authMiddleware).Post("/create", s.handleCreateWager)
 	r.With(s.authMiddleware).Patch("/vote", s.handleVote)
 	r.With(s.authMiddleware).Patch("/claim", s.handleVote)
@@ -57,9 +57,9 @@ var supportedStatuses = []pymwymi.WagerStatus{
 // must path status as a query param eg /wager/list?status=1
 func (s *Server) handleGetWagers(w http.ResponseWriter, r *http.Request) {
 	statusStr := r.URL.Query().Get("status")
-	statusInt, err := strconv.Atoi(statusStr)
-	if err != nil {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", err.Error()), fmt.Sprintf("invalid status: %s", statusStr))
+	statusInt, validationErr := strconv.Atoi(statusStr)
+	if validationErr != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", validationErr.Error()), fmt.Sprintf("invalid status: %s", statusStr))
 		return
 	}
 
@@ -68,7 +68,26 @@ func (s *Server) handleGetWagers(w http.ResponseWriter, r *http.Request) {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, ""), fmt.Sprintf("invalid status: %s", statusStr))
 		return
 	}
-	s.wagerService.GetWagersForUser(r.Context(), pymwymi.WagerStatus(statusInt))
+	ctx := r.Context()
+
+	pageOpts := pymwymi.GetPageOptsFromCtx(ctx)
+	walletAddress := pymwymi.GetUserFromCtx(ctx).WalletAddress
+
+	wagers, err := s.wagerService.GetWagersForUser(ctx, pageOpts, pymwymi.WagerStatus(statusInt), walletAddress)
+	if err != nil {
+		handlePYMWYMIError(w, err, "failed to create wager")
+	}
+	more := true
+	if int64(len(wagers)) < pageOpts.Limit {
+		more = false
+	}
+	pagination := &Pagination{
+		More:        more,
+		CurrentPage: pageOpts.Page,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	NewPYMWYMIResponse(ctx, wagers, pagination, w)
 }
 
 func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
@@ -111,9 +130,9 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// err is already handled in validator
+	ctx := r.Context()
 
-	wager, err := s.wagerService.CreateWager(r.Context(),
+	wager, err := s.wagerService.CreateWager(ctx,
 		stake,
 		newWagerPayload.Currency,
 		newWagerPayload.Category,
@@ -129,7 +148,7 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(wager)
+	NewPYMWYMIResponse(ctx, wager, nil, w)
 }
 
 // user clicks accept -> signs transaction -> we send transaction sig with wager id

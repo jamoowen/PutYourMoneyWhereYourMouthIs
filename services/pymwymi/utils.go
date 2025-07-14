@@ -26,8 +26,13 @@ func GetUserFromCtx(ctx context.Context) User {
 	return ctx.Value(UserKey).(User)
 }
 
-func GetPageOptsFromCtx(ctx context.Context) PageOpts {
-	return ctx.Value(PaginationKey).(PageOpts)
+func GetPageOptsFromCtx(ctx context.Context) *PageOpts {
+	paginationKey := ctx.Value(PaginationKey)
+	if paginationKey == nil {
+		return nil
+	}
+	opts := paginationKey.(PageOpts)
+	return &opts
 }
 
 func GetIsoTime(t time.Time) string {
