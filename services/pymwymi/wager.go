@@ -8,13 +8,8 @@ package pymwymi
 
 type (
 	WagerStatus       int8
-	InteractionStatus int8
-)
-
-const (
-	InteractionStateDormant InteractionStatus = iota
-	InteractionStatePending
-	InteractionStateConfirmed
+	InteractionStatus string
+	VoteIntent        string
 )
 
 // these map directly to the states on the smart contract
@@ -26,10 +21,14 @@ const (
 	StateClaimed
 )
 
-type VoteIntent string
+const (
+	InteractionStateDormant   InteractionStatus = "dormant"
+	InteractionStatePending   InteractionStatus = "pending"
+	InteractionStateConfirmed InteractionStatus = "confirmed"
+)
 
 const (
-	VotePending VoteIntent = "pending"
+	VoteUnknown VoteIntent = "unknown"
 	VoteCancel  VoteIntent = "cancel"
 	VoteWinner  VoteIntent = "winner"
 )
@@ -59,6 +58,7 @@ type Wager struct {
 	Location        string            `bson:"location" json:"location"`
 	Stake           int64             `bson:"stake" json:"stake"`
 	Currency        string            `bson:"currency" json:"currency"`
+	Chain           string            `bson:"chain" json:"chain"`
 	Participants    []Player          `bson:"participants" json:"participants"`
 	Status          WagerStatus       `bson:"status" json:"status"`
 	Winner          string            `bson:"winner" json:"winner"`

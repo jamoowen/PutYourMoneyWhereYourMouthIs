@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { Authorisation, User } from '@/types';
+import { Authorisation, User } from '@/types/common';
 import { json } from 'stream/consumers';
 import { getAuthStatus } from './lib/utils';
 

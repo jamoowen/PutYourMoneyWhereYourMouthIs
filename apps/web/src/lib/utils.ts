@@ -1,4 +1,4 @@
-import { User, Authorisation } from "@/types"
+import { User, Authorisation } from "@/types/common"
 import { clsx, type ClassValue } from "clsx"
 import { NextRequest } from "next/server"
 import { twMerge } from "tailwind-merge"

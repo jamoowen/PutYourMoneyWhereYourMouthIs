@@ -1,6 +1,6 @@
 'use client'
 import Button from './common/button'
-import { User } from '@/types'
+import { User } from '@/types/common'
 import SignInButton from './sign-in-button'
 
 import { useRouter } from "next/navigation"

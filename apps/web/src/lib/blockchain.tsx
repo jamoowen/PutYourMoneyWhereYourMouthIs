@@ -1,5 +1,5 @@
 import MetaMaskImage from '@/images/metamask'
-import { err, ok, Result } from '@/types'
+import { err, ok, Result } from '@/types/common'
 import { metaMask } from '@wagmi/connectors'
 import { Address, Chain, formatUnits, parseUnits } from 'viem'
 import { WagerEscrowAddressBaseMainnet, WagerEscrowAddressBaseTestnet, ChainEnvironment, ChainName, USDCAddressBaseTestnet, USDCAdressBaseMainnet, ChainId } from './constants'

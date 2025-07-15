@@ -28,3 +28,11 @@ export class WagerError extends Error {
     Object.setPrototypeOf(this, WagerError.prototype);
   }
 }
+
+export type PaginatedResponse<T> = {
+  pagination: {
+    more: boolean
+    currentPage: number
+  },
+  data: T
+}

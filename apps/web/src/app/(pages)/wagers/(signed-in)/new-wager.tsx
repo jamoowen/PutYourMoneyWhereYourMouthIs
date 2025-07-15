@@ -10,7 +10,7 @@ import Image from 'next/image'
 import SignInOptions from '@/components/sign-in-options'
 import contractJson from '@/contracts/WagerEscrow.json' assert { type: 'json' }
 import { extendedErc20Abi } from '@/contracts/ExtendedERC20ABI'
-import { User, WagerError } from '@/types'
+import { User, WagerError } from '@/types/common'
 import { Abi, Address, erc20Abi } from 'viem'
 import { toWeiUSDC, getTokenAddress, getChainId, getPYMWYMIContractAddress, fromWeiUSDC } from '@/lib/blockchain'
 import { useAccount, useSwitchChain, useWriteContract, useReadContract, useBalance } from 'wagmi'

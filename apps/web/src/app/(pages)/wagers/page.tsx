@@ -1,5 +1,5 @@
 import { getAuthStatus } from '@/lib/utils';
-import { Authorisation } from '@/types';
+import { Authorisation } from '@/types/common';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 

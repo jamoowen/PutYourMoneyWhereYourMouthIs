@@ -1,33 +1,22 @@
-import { queryOptions } from '@tanstack/react-query'
+import { PaginatedResponse } from '@/types/common'
+import { Wager, WagerStatus } from '@/types/wager'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 
-export const getWagers = queryOptions({
-  queryKey: ['wagers'],
-  queryFn: async () => {
-    const url = process.env.NEXT_PUBLIC_API_URL + "/wager/list"
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    })
-
-    return response.json()
-  },
-})
-
-type PersistedWager =  newwa{
+const fetchWagers = async (status: number, page: number, limit: number): Promise<PaginatedResponse<Wager[]>> => {
+  const url = process.env.NEXT_PUBLIC_API_URL + `/wager/list?status=${status}&page=${page}&limit=${limit}`
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  })
+  return await response.json()
 }
 
-const fetchWagers = async (limit = 10): Promise<Array<Post>> => {
-  const response = await fetch('https://jsonplaceholder.typicode.com/posts')
-  const data = await response.json()
-  return data.filter((x: Post) => x.id <= limit)
-}
-
-const usePosts = (limit: number) => {
+const useWagers = (status: WagerStatus, page = 1, limit = 20) => {
   return useQuery({
     queryKey: ['posts', limit],
-    queryFn: () => fetchPosts(limit),
+    queryFn: () => fetchWagers(status, page, limit),
   })
 }
 
-export { usePosts, fetchPosts }
+export { useWagers, fetchWagers }
