@@ -65,8 +65,8 @@ type Wager struct {
 }
 
 type PersistedWager struct {
-	ID        string `bson:"_id" json:"_id"`
-	CreatedAt string `json:"createdAt" bson:"createdAt"`
-	UpdatedAt string `json:"updatedAt" bson:"updatedAt"`
+	ID        string `bson:"_id,omitempty" json:"_id"`
+	CreatedAt string `bson:"createdAt" json:"createdAt"`
+	UpdatedAt string `bson:"updatedAt" json:"updatedAt"`
 	Wager     `bson:",inline" json:",inline"`
 }

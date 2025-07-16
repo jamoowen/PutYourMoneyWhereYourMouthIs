@@ -12,8 +12,8 @@ type User struct {
 }
 
 type PersistedUser struct {
-	ID        bson.ObjectID `json:"_id" bson:"_id,omitempty"`
-	CreatedAt string        `json:"createdAt" bson:"createdAt"`
-	UpdatedAt string        `json:"updatedAt" bson:"updatedAt"`
+	ID        bson.ObjectID `bson:"_id,omitempty" json:"_id"`
+	CreatedAt string        `bson:"createdAt" json:"createdAt"`
+	UpdatedAt string        `bson:"updatedAt" json:"updatedAt"`
 	User      `bson:",inline" json:",inline"`
 }

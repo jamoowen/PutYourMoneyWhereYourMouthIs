@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -46,6 +47,7 @@ type userCustomClaims struct {
 }
 
 func (a *Service) CreateUserJwt(user pymwymi.User) (string, *pymwymi.Error) {
+	fmt.Printf("user: %v", user)
 	claims := userCustomClaims{
 		user,
 		jwt.RegisteredClaims{

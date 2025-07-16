@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Button from './common/button'
-import { useAccount, useConnect, useSignMessage } from 'wagmi'
-import { CreateConnectorFn } from '@wagmi/core'
+import { useAccount, useConfig, useConnect, useDisconnect, useSignMessage } from 'wagmi'
+import { CreateConnectorFn, connect as coreConnect, disconnect as coreDisconnect } from '@wagmi/core'
 
 import { supportedWallets as SUPPORTED_WALLETS } from '@/lib/blockchain'
 import { useRouter } from 'next/navigation'
@@ -21,6 +21,7 @@ export default function SignInOptions({ onSignIn }: { onSignIn?: () => void }) {
   const { connect } = useConnect({ mutation: { onSuccess: signTransactionAndPost } })
   const { address, isConnected } = useAccount()
   const { signMessageAsync } = useSignMessage()
+  const config = useConfig()
 
   const [signInErr, setSignInErr] = useState<string | null>(null)
   const [signInLoading, setSignInLoading] = useState(false)
@@ -68,18 +69,13 @@ export default function SignInOptions({ onSignIn }: { onSignIn?: () => void }) {
     setSignInErr(null)
     setSignInLoading(true)
     try {
-      if (!isConnected) {
-        const res = await connect({
-          connector: connectFn,
-        })
-      } else {
-        signTransactionAndPost()
+      if (isConnected) {
+        await coreDisconnect(config)
       }
+      await connect({ connector: connectFn })
     } catch (error) {
       console.error('Sign-in error:', error)
       setSignInErr(`Failed to sign in`)
-    } finally {
-      console.log(`finally...`)
       setSignInLoading(false)
     }
   }

@@ -171,9 +171,9 @@ export default function NewWager({ user }: { user: User }) {
   // 2. onsuccess, we want to post the result to our backend.
   // 3. backend ABSOLUTELY needs to receive this info
   async function onSubmit(data: NewChallengeForm) {
-    console.log('SUBMITTING', JSON.stringify(data))
+    console.log(`isConnected: ${isConnected}, address: ${address}, user.walletAddress: ${user.walletAddress}`)
     if (!isConnected || address !== user.walletAddress) {
-      const dialog = document.getElementById('sign_in_modal_2') as HTMLDialogElement
+      const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
       dialog.showModal()
       return
     }
@@ -230,6 +230,7 @@ export default function NewWager({ user }: { user: User }) {
   }
 
   async function interactWithPYMWYMIContract() {
+    console.log(`interactWithPYMWYMIContract: ${JSON.stringify(newWagerData)}`)
     writeContractCreateWager({
       address: contractAddress,
       abi: contractJson.abi as Abi,
@@ -276,6 +277,8 @@ export default function NewWager({ user }: { user: User }) {
     <div>
       <Button
         onClick={() => {
+
+          console.log(`isConnected: ${isConnected}, address: ${address}, user.walletAddress: ${JSON.stringify(user)}`)
           if (!isConnected || address !== user.walletAddress) {
             const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
             dialog.showModal()
@@ -290,11 +293,11 @@ export default function NewWager({ user }: { user: User }) {
       >
         Create
       </Button>
-      <dialog id="sign_in_modal_2" className="modal">
-        <div className="modal-box max-h-[80vh] overflow-y-auto">
-          <SignInOptions />
-        </div>
-      </dialog>
+      {/* <dialog id="sign_in_modal_2" className="modal"> */}
+      {/*   <div className="modal-box max-h-[80vh] overflow-y-auto"> */}
+      {/*     <SignInOptions /> */}
+      {/*   </div> */}
+      {/* </dialog> */}
       <dialog id="new_wager_modal" className="modal">
         <div className="modal-box max-h-[80vh] overflow-y-auto">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

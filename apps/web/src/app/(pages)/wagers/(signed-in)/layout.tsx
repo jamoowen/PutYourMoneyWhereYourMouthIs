@@ -12,6 +12,7 @@ export default async function WagersLayout({
   const allCookies = await cookies()
   const token = allCookies.get('pymwymi_auth_token')?.value ?? null;
   const [user] = getAuthStatus(token)
+  console.log(`USER: ${JSON.stringify(user)}`)
 
   if (!user) {
     return null

@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -91,6 +92,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) {
 		handlePYMWYMIError(w, err, "failed to authenticate")
 		return
 	}
+	fmt.Printf("setting cookie: %v\n", jwt)
 
 	// TODO set secure true?
 	http.SetCookie(w, &http.Cookie{

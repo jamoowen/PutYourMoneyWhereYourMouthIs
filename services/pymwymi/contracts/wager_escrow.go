@@ -31,7 +31,7 @@ var (
 
 // WagerEscrowMetaData contains all meta data concerning the WagerEscrow contract.
 var WagerEscrowMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_basisPoints\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"receive\",\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"COMMISSION_BASIS_POINTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_PARTICIPANTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"acceptWager\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addToken\",\"inputs\":[{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"claimRefund\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"claimWinnings\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"commissionBalances\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createWager\",\"inputs\":[{\"name\":\"_participants\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"_stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deleteCompletedWagers\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getParticipant\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"walletAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"hasClaimed\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSupportedTokens\",\"inputs\":[],\"outputs\":[{\"name\":\"tokens\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"erc20Contracts\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getWager\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"status\",\"type\":\"uint8\",\"internalType\":\"enumWagerEscrow.WagerStatus\"},{\"name\":\"winner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"totalStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"participantArray\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setCommissionBasisPoints\",\"inputs\":[{\"name\":\"_basisPoints\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setWagerStatus\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"status\",\"type\":\"uint8\",\"internalType\":\"enumWagerEscrow.WagerStatus\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setWinner\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"winner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportedTokens\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supportedTokensArray\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawCommission\",\"inputs\":[{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Claim\",\"inputs\":[{\"name\":\"participant\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CompletedWagersDeleted\",\"inputs\":[{\"name\":\"ids\",\"type\":\"uint256[]\",\"indexed\":true,\"internalType\":\"uint256[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerAccepted\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"participant\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerCreated\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"creator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerDeleted\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerStatusUpdated\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumWagerEscrow.WagerStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WinnerSet\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"winner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ReentrancyGuardReentrantCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SafeERC20FailedOperation\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_basisPoints\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"receive\",\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"COMMISSION_BASIS_POINTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_PARTICIPANTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"acceptWager\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addToken\",\"inputs\":[{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"claimRefund\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"claimWinnings\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"commissionBalances\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createWager\",\"inputs\":[{\"name\":\"_participants\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"_stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deleteCompletedWagers\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getAllWagers\",\"inputs\":[],\"outputs\":[{\"name\":\"ids\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getParticipant\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"walletAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"hasClaimed\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSupportedTokens\",\"inputs\":[],\"outputs\":[{\"name\":\"tokens\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"erc20Contracts\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getWager\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"status\",\"type\":\"uint8\",\"internalType\":\"enumWagerEscrow.WagerStatus\"},{\"name\":\"winner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"totalStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requiredStake\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"participantAddresses\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setCommissionBasisPoints\",\"inputs\":[{\"name\":\"_basisPoints\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setWagerStatus\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"status\",\"type\":\"uint8\",\"internalType\":\"enumWagerEscrow.WagerStatus\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setWinner\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"winner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportedTokens\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"supportedTokensArray\",\"inputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawCommission\",\"inputs\":[{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Claim\",\"inputs\":[{\"name\":\"participant\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CompletedWagersDeleted\",\"inputs\":[{\"name\":\"ids\",\"type\":\"uint256[]\",\"indexed\":true,\"internalType\":\"uint256[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerAccepted\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"participant\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerCreated\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"creator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerDeleted\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WagerStatusUpdated\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"status\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumWagerEscrow.WagerStatus\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WinnerSet\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"winner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ReentrancyGuardReentrantCall\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SafeERC20FailedOperation\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
 }
 
 // WagerEscrowABI is the input ABI used to generate the binding from.
@@ -273,6 +273,37 @@ func (_WagerEscrow *WagerEscrowCallerSession) CommissionBalances(arg0 common.Add
 	return _WagerEscrow.Contract.CommissionBalances(&_WagerEscrow.CallOpts, arg0)
 }
 
+// GetAllWagers is a free data retrieval call binding the contract method 0x7fed58c7.
+//
+// Solidity: function getAllWagers() view returns(uint256[] ids)
+func (_WagerEscrow *WagerEscrowCaller) GetAllWagers(opts *bind.CallOpts) ([]*big.Int, error) {
+	var out []interface{}
+	err := _WagerEscrow.contract.Call(opts, &out, "getAllWagers")
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
+}
+
+// GetAllWagers is a free data retrieval call binding the contract method 0x7fed58c7.
+//
+// Solidity: function getAllWagers() view returns(uint256[] ids)
+func (_WagerEscrow *WagerEscrowSession) GetAllWagers() ([]*big.Int, error) {
+	return _WagerEscrow.Contract.GetAllWagers(&_WagerEscrow.CallOpts)
+}
+
+// GetAllWagers is a free data retrieval call binding the contract method 0x7fed58c7.
+//
+// Solidity: function getAllWagers() view returns(uint256[] ids)
+func (_WagerEscrow *WagerEscrowCallerSession) GetAllWagers() ([]*big.Int, error) {
+	return _WagerEscrow.Contract.GetAllWagers(&_WagerEscrow.CallOpts)
+}
+
 // GetParticipant is a free data retrieval call binding the contract method 0x35f3ad7a.
 //
 // Solidity: function getParticipant(uint256 id, address user) view returns(address walletAddress, uint256 stake, bool hasClaimed)
@@ -370,23 +401,23 @@ func (_WagerEscrow *WagerEscrowCallerSession) GetSupportedTokens() (struct {
 
 // GetWager is a free data retrieval call binding the contract method 0x7a2756f2.
 //
-// Solidity: function getWager(uint256 id) view returns(uint8 status, address winner, uint256 totalStake, uint256 requiredStake, address[] participantArray)
+// Solidity: function getWager(uint256 id) view returns(uint8 status, address winner, uint256 totalStake, uint256 requiredStake, address[] participantAddresses)
 func (_WagerEscrow *WagerEscrowCaller) GetWager(opts *bind.CallOpts, id *big.Int) (struct {
-	Status           uint8
-	Winner           common.Address
-	TotalStake       *big.Int
-	RequiredStake    *big.Int
-	ParticipantArray []common.Address
+	Status               uint8
+	Winner               common.Address
+	TotalStake           *big.Int
+	RequiredStake        *big.Int
+	ParticipantAddresses []common.Address
 }, error) {
 	var out []interface{}
 	err := _WagerEscrow.contract.Call(opts, &out, "getWager", id)
 
 	outstruct := new(struct {
-		Status           uint8
-		Winner           common.Address
-		TotalStake       *big.Int
-		RequiredStake    *big.Int
-		ParticipantArray []common.Address
+		Status               uint8
+		Winner               common.Address
+		TotalStake           *big.Int
+		RequiredStake        *big.Int
+		ParticipantAddresses []common.Address
 	})
 	if err != nil {
 		return *outstruct, err
@@ -396,7 +427,7 @@ func (_WagerEscrow *WagerEscrowCaller) GetWager(opts *bind.CallOpts, id *big.Int
 	outstruct.Winner = *abi.ConvertType(out[1], new(common.Address)).(*common.Address)
 	outstruct.TotalStake = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
 	outstruct.RequiredStake = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
-	outstruct.ParticipantArray = *abi.ConvertType(out[4], new([]common.Address)).(*[]common.Address)
+	outstruct.ParticipantAddresses = *abi.ConvertType(out[4], new([]common.Address)).(*[]common.Address)
 
 	return *outstruct, err
 
@@ -404,26 +435,26 @@ func (_WagerEscrow *WagerEscrowCaller) GetWager(opts *bind.CallOpts, id *big.Int
 
 // GetWager is a free data retrieval call binding the contract method 0x7a2756f2.
 //
-// Solidity: function getWager(uint256 id) view returns(uint8 status, address winner, uint256 totalStake, uint256 requiredStake, address[] participantArray)
+// Solidity: function getWager(uint256 id) view returns(uint8 status, address winner, uint256 totalStake, uint256 requiredStake, address[] participantAddresses)
 func (_WagerEscrow *WagerEscrowSession) GetWager(id *big.Int) (struct {
-	Status           uint8
-	Winner           common.Address
-	TotalStake       *big.Int
-	RequiredStake    *big.Int
-	ParticipantArray []common.Address
+	Status               uint8
+	Winner               common.Address
+	TotalStake           *big.Int
+	RequiredStake        *big.Int
+	ParticipantAddresses []common.Address
 }, error) {
 	return _WagerEscrow.Contract.GetWager(&_WagerEscrow.CallOpts, id)
 }
 
 // GetWager is a free data retrieval call binding the contract method 0x7a2756f2.
 //
-// Solidity: function getWager(uint256 id) view returns(uint8 status, address winner, uint256 totalStake, uint256 requiredStake, address[] participantArray)
+// Solidity: function getWager(uint256 id) view returns(uint8 status, address winner, uint256 totalStake, uint256 requiredStake, address[] participantAddresses)
 func (_WagerEscrow *WagerEscrowCallerSession) GetWager(id *big.Int) (struct {
-	Status           uint8
-	Winner           common.Address
-	TotalStake       *big.Int
-	RequiredStake    *big.Int
-	ParticipantArray []common.Address
+	Status               uint8
+	Winner               common.Address
+	TotalStake           *big.Int
+	RequiredStake        *big.Int
+	ParticipantAddresses []common.Address
 }, error) {
 	return _WagerEscrow.Contract.GetWager(&_WagerEscrow.CallOpts, id)
 }

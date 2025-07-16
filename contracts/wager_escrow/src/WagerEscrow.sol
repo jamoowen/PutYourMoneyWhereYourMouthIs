@@ -36,8 +36,7 @@ contract WagerEscrow is ReentrancyGuard {
         uint256 totalStake;
         uint256 requiredStake;
         WagerStatus status;
-        mapping(address => Participant) participants;
-        address[] participantArray;
+        Participant[] participants;
     }
 
     mapping(uint256 => Wager) private wagers;
@@ -81,6 +80,10 @@ contract WagerEscrow is ReentrancyGuard {
         return (tokens, erc20Contracts);
     }
 
+    function getAllWagers() public view returns (uint256[] memory ids) {
+        return wagerArray;
+    }
+
     function setCommissionBasisPoints(uint256 _basisPoints) external onlyOwner {
         require(_basisPoints > 0 && _basisPoints <= 10_000, "Basis points must be between 1 and 10,000");
         COMMISSION_BASIS_POINTS = _basisPoints;
@@ -105,20 +108,30 @@ contract WagerEscrow is ReentrancyGuard {
         wager.status = WagerStatus.Created;
         wager.token = _token;
 
-        wager.participants[msg.sender] = Participant(msg.sender, _stake, false);
-        wager.participantArray.push(msg.sender);
+        wager.participants.push(Participant(msg.sender, _stake, false));
 
         for (uint256 i = 0; i < _participants.length; i++) {
-            wager.participants[_participants[i]] = Participant(_participants[i], 0, false);
-            wager.participantArray.push(_participants[i]);
+            wager.participants.push(Participant(_participants[i], 0, false));
         }
         emit WagerCreated(id, msg.sender);
         return id;
     }
 
+    function findParticipant(Wager storage wager, address user) internal view returns (uint256 index, bool found) {
+        for (uint256 i = 0; i < wager.participants.length; i++) {
+            if (wager.participants[i].walletAddress == user) {
+                return (i, true);
+            }
+        }
+        return (0, false);
+    }
+
     function acceptWager(uint256 id, uint256 _stake, address _token) external {
         Wager storage wager = wagers[id];
-        Participant storage p = wager.participants[msg.sender];
+
+        (uint256 index, bool found) = findParticipant(wager, msg.sender);
+        require(found, "Not a participant");
+        Participant storage p = wager.participants[index];
 
         require(wager.status == WagerStatus.Created, "Wager not active");
         require(wager.token == _token, "Token mismatch");
@@ -132,8 +145,8 @@ contract WagerEscrow is ReentrancyGuard {
         wager.totalStake += _stake;
 
         bool allParticipantsHaveStaked = true;
-        for (uint256 i = 0; i < wager.participantArray.length; i++) {
-            if (wager.participants[wager.participantArray[i]].stake < wager.requiredStake) {
+        for (uint256 i = 0; i < wager.participants.length; i++) {
+            if (wager.participants[i].stake < wager.requiredStake) {
                 allParticipantsHaveStaked = false;
                 break;
             }
@@ -152,14 +165,18 @@ contract WagerEscrow is ReentrancyGuard {
     }
 
     function setWinner(uint256 id, address winner) external onlyOwner {
-        require(wagers[id].participants[winner].walletAddress != address(0), "Winner not a participant");
-        wagers[id].winner = winner;
+        Wager storage wager = wagers[id];
+        (uint256 _, bool found) = findParticipant(wager, msg.sender);
+        require(found, "Not a participant");
+        wager.winner = winner;
         emit WinnerSet(id, winner);
     }
 
     function claimRefund(uint256 id) external nonReentrant {
         Wager storage wager = wagers[id];
-        Participant storage p = wager.participants[msg.sender];
+        (uint256 index, bool found) = findParticipant(wager, msg.sender);
+        require(found, "Not a participant");
+        Participant storage p = wager.participants[index];
 
         require(wager.status == WagerStatus.Cancelled, "Wager not cancelled");
         require(!p.hasClaimed, "Already claimed");
@@ -179,7 +196,9 @@ contract WagerEscrow is ReentrancyGuard {
 
     function claimWinnings(uint256 id) external nonReentrant {
         Wager storage wager = wagers[id];
-        Participant storage p = wager.participants[msg.sender];
+        (uint256 index, bool found) = findParticipant(wager, msg.sender);
+        require(found, "Not a participant");
+        Participant storage p = wager.participants[index];
 
         require(wager.winner == msg.sender, "Not winner");
         require(wager.status == WagerStatus.Completed, "Wager not completed");
@@ -204,16 +223,21 @@ contract WagerEscrow is ReentrancyGuard {
             address winner,
             uint256 totalStake,
             uint256 requiredStake,
-            address[] memory participantArray
+            address[] memory participantAddresses
         )
     {
         Wager storage wager = wagers[id];
+        uint256 length = wager.participants.length;
+        participantAddresses = new address[](length);
+        for (uint256 i = 0; i < length; i++) {
+            participantAddresses[i] = wager.participants[i].walletAddress;
+        }
         return (
             wager.status,
             wager.winner,
             wager.totalStake,
             wager.requiredStake,
-            wager.participantArray
+            participantAddresses
         );
     }
 
@@ -222,7 +246,10 @@ contract WagerEscrow is ReentrancyGuard {
         view
         returns (address walletAddress, uint256 stake, bool hasClaimed)
     {
-        Participant storage p = wagers[id].participants[user];
+        Wager storage wager = wagers[id];
+        (uint256 index, bool found) = findParticipant(wager, user);
+        require(found, "Not a participant");
+        Participant storage p = wager.participants[index];
         return (p.walletAddress, p.stake, p.hasClaimed);
     }
 
@@ -236,9 +263,6 @@ contract WagerEscrow is ReentrancyGuard {
             uint256 id = wagerArrayCopy[i];
             Wager storage wager = wagers[id];
             if (wager.status == WagerStatus.Claimed) {
-                for (uint256 j = 0; j < wager.participantArray.length; j++) {
-                    delete wager.participants[wager.participantArray[j]];
-                }
                 delete wagers[id];
                 completedWagers[completedCounter] = id;
                 completedCounter++;

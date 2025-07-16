@@ -2,17 +2,24 @@
 import Button from './common/button'
 import { User } from '@/types/common'
 import SignInButton from './sign-in-button'
+import { disconnect as coreDisconnect } from '@wagmi/core'
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useAccount, useConfig } from 'wagmi'
 
 export default function UserProfile({ user }: { user: User | null }) {
 
+  const config = useConfig()
   const [isSignOutLoading, setIsSignOutLoading] = useState(false)
   const router = useRouter()
+  const { isConnected } = useAccount()
 
   async function handleSignOut() {
     setIsSignOutLoading(true)
+    if (isConnected) {
+      await coreDisconnect(config)
+    }
     await fetch('/api/auth', {
       method: 'DELETE',
       credentials: 'include',

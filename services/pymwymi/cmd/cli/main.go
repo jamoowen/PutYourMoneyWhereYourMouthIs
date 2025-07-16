@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -63,18 +64,46 @@ func main() {
 
 	// Command dispatch
 	switch command {
-	case "supported-tokens":
+	case "tokens":
 		handleGetSupportedTokens(instance)
-	case "add-supported-token":
+	case "add-token":
 		if len(params) < 1 {
 			log.Fatal("Missing token address")
 		}
 		auth := prepareForContractWrite(client, chainID, privateKeyHex)
 		handleAddSupportedToken(auth, instance, params[0])
+	case "wager":
+		if len(params) < 1 {
+			log.Fatal("Missing wager ID")
+		}
+		ID, err := strconv.Atoi(params[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		handleGetWager(instance, ID)
+	case "all-wagers":
+		handleGetAllWagerIDs(instance)
 	default:
 		fmt.Println("Unknown command:", command)
 		printHelp()
 	}
+}
+
+func handleGetWager(instance *contracts.WagerEscrow, ID int) {
+	bigID := big.NewInt(int64(ID))
+	result, err := instance.GetWager(nil, bigID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("wager:", result)
+}
+
+func handleGetAllWagerIDs(instance *contracts.WagerEscrow) {
+	result, err := instance.GetAllWagers(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("wager ids:", result)
 }
 
 func handleGetSupportedTokens(instance *contracts.WagerEscrow) {
@@ -148,10 +177,12 @@ func printHelp() {
 	fmt.Println("  go run ./cmd/cli/ [env] [command] [params...]")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  go run ./cmd/cli/ test supported-tokens")
-	fmt.Println("  go run ./cmd/cli/ main add-supported-token 0xTOKENADDRESS")
+	fmt.Println("  go run ./cmd/cli/ test tokens")
+	fmt.Println("  go run ./cmd/cli/ main add-token 0xTOKENADDRESS")
 	fmt.Println()
 	fmt.Println("Available commands:")
-	fmt.Println("  supported-tokens             - List supported tokens")
-	fmt.Println("  add-supported-token [token] - Add a token to supported list")
+	fmt.Println("  tokens             - List supported tokens")
+	fmt.Println("  add-token [token] - Add a token to supported list")
+	fmt.Println("  wager [id]        - Get a wager by ID")
+	fmt.Println("  all-wagers        - Get all wager IDs")
 }

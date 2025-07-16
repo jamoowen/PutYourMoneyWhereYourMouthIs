@@ -13,6 +13,7 @@ function parseJwt(token: string | null): User | null {
     const payload = token.split('.')[1];
     const decoded = atob(payload); // base64 decode
     const json = JSON.parse(decoded);
+    console.log(`JSON: ${JSON.stringify(json)}`)
     return {
       name: json.name,
       walletAddress: json.walletAddress,
