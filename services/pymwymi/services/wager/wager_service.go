@@ -45,24 +45,44 @@ func (s *Service) GetWagerForParticipant(ctx context.Context, id string, walletA
 	return persistedWager, nil
 }
 
-func (s *Service) GetWagersForUser(ctx context.Context, pageOpts *pymwymi.PageOpts, status pymwymi.WagerStatus, walletAddress string) ([]pymwymi.PersistedWager, *pymwymi.Error) {
-	persistedWagers, err := s.wagerStorage.GetWagersByStatus(ctx, walletAddress, status, pageOpts)
+func (s *Service) GetWagersForUser(
+	ctx context.Context,
+	creator string,
+	pageOpts *pymwymi.PageOpts,
+	status pymwymi.WagerStatus,
+	walletAddress string,
+	winner string,
+) ([]pymwymi.PersistedWager, *pymwymi.Error) {
+	var wagers []pymwymi.PersistedWager
+	var err *pymwymi.Error
+
+	switch status {
+	case pymwymi.StateCreated:
+		wagers, err = s.wagerStorage.GetCreatedWagers(ctx, walletAddress, creator == "true", pageOpts)
+	case pymwymi.StatePending:
+		wagers, err = s.wagerStorage.GetPendingWagers(ctx, walletAddress, pageOpts)
+	case pymwymi.StateCompleted:
+		wagers, err = s.wagerStorage.GetClaimableWagers(ctx, walletAddress, pageOpts)
+	case pymwymi.StateClaimed:
+		wagers, err = s.wagerStorage.GetPastWagers(ctx, walletAddress, pageOpts)
+	}
+
 	if err != nil {
 		return nil, pymwymi.Errorf(err.Code, "failed to get wagers by status: %s", err.Message)
 	}
-	return persistedWagers, nil
+	return wagers, nil
 }
 
 // @DEV I thought we should store the pymwymi users on the record but just walletAddress is probably fine
 func (s *Service) CreateWager(ctx context.Context,
-	stake int64,
-	category,
-	currency,
-	description,
-	location,
-	name,
-	transactionHash string,
+	category string,
+	currency string,
+	description string,
+	location string,
+	name string,
 	participantsWalletAddresses []string,
+	stake int64,
+	transactionHash string,
 ) (pymwymi.Wager, *pymwymi.Error) {
 	creator := pymwymi.GetUserFromCtx(ctx).WalletAddress
 
@@ -97,20 +117,6 @@ func (s *Service) CreateWager(ctx context.Context,
 	}
 	return wager, nil
 }
-
-// // once all players have staked, it changes to pending state
-// // if all the staked players have voted cancel, we should cancel
-// // this is a race condition. we should handle votes in a queue...
-// func (s *Service) SubmitVote(ctx context.Context, wagerID string) *pymwymi.Error {
-// 	wager, err := s.wagerStorage.GetWagerByID(ctx, wagerID)
-// 	if err != nil {
-// 		return pymwymi.Errorf(err.Code, "could not submit cancel vote: %v", err)
-// 	}
-// 	if wager.Status != pymwymi.StateCreated && wager.Status != pymwymi.StatePending {
-// 		return pymwymi.Errorf(pymwymi.ErrBadInput, "you can only vote on a wager that is created or pending")
-// 	}
-// 	return nil
-// }
 
 // we just need to check that all members who have staked have voted
 // if nobody accepts then the creator should be allowed to cancel

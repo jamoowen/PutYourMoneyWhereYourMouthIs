@@ -42,38 +42,43 @@ func (s *Server) mountWagerRoutes() {
 	r.With(s.authMiddleware).Post("/create", s.handleCreateWager)
 	r.With(s.authMiddleware).Patch("/vote", s.handleVote)
 	r.With(s.authMiddleware).Patch("/claim", s.handleVote)
+	r.With(s.authMiddleware).Patch("/accept", s.handleAccept)
 
 	s.router.Mount(prefix, r)
 }
 
-var supportedStatuses = []pymwymi.WagerStatus{
-	pymwymi.StateCreated,
-	pymwymi.StatePending,
-	pymwymi.StateCancelled,
-	pymwymi.StateCompleted,
-	pymwymi.StateClaimed,
+var validStatuses = []pymwymi.WagerStatus{
+	pymwymi.StateCreated,   // not all users have accepted yet...
+	pymwymi.StatePending,   // all users have accepted
+	pymwymi.StateCancelled, // all users have voted cancel
+	pymwymi.StateCompleted, // winner is able to claim
+	pymwymi.StateClaimed,   // winner has claimed
 }
 
 // must path status as a query param eg /wager/list?status=1
 func (s *Server) handleGetWagers(w http.ResponseWriter, r *http.Request) {
 	statusStr := r.URL.Query().Get("status")
-	statusInt, validationErr := strconv.Atoi(statusStr)
-	if validationErr != nil {
-		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", validationErr.Error()), fmt.Sprintf("invalid status: %s", statusStr))
+	statusInt, convErr := strconv.Atoi(statusStr)
+	if convErr != nil {
+		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, "%s", convErr.Error()), fmt.Sprintf("invalid status: %s", statusStr))
 		return
 	}
 
-	isSupported := slices.Contains(supportedStatuses, pymwymi.WagerStatus(statusInt))
-	if !isSupported {
+	isStatusValid := slices.Contains(validStatuses, pymwymi.WagerStatus(statusInt))
+	if !isStatusValid {
 		handlePYMWYMIError(w, pymwymi.Errorf(pymwymi.ErrBadInput, ""), fmt.Sprintf("invalid status: %s", statusStr))
 		return
 	}
-	ctx := r.Context()
 
+	// these are not strictly necessary
+	creator := r.URL.Query().Get("creator")
+	winner := r.URL.Query().Get("winner")
+
+	ctx := r.Context()
 	pageOpts := pymwymi.GetPageOptsFromCtx(ctx)
 	walletAddress := pymwymi.GetUserFromCtx(ctx).WalletAddress
 
-	wagers, err := s.wagerService.GetWagersForUser(ctx, pageOpts, pymwymi.WagerStatus(statusInt), walletAddress)
+	wagers, err := s.wagerService.GetWagersForUser(ctx, creator, pageOpts, pymwymi.WagerStatus(statusInt), walletAddress, winner)
 	if err != nil {
 		handlePYMWYMIError(w, err, "failed to create wager")
 	}
@@ -133,14 +138,14 @@ func (s *Server) handleCreateWager(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	wager, err := s.wagerService.CreateWager(ctx,
-		stake,
-		newWagerPayload.Currency,
 		newWagerPayload.Category,
+		newWagerPayload.Currency,
 		newWagerPayload.Description,
 		newWagerPayload.Location,
 		newWagerPayload.Name,
-		newWagerPayload.TransactionHash,
 		newWagerPayload.ParticipantsAddresses,
+		stake,
+		newWagerPayload.TransactionHash,
 	)
 	if err != nil {
 		handlePYMWYMIError(w, err, "failed to create wager")

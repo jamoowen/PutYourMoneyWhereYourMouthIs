@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"log"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -13,9 +14,11 @@ type WagerStorage struct {
 	c *mongo.Collection
 }
 
+const CollectionName = "wagers"
+
 func NewWagerStore(client *mongo.Client, dbName string) *WagerStorage {
 	return &WagerStorage{
-		c: client.Database(dbName).Collection("wagers"),
+		c: client.Database(dbName).Collection(CollectionName),
 	}
 }
 
@@ -34,14 +37,11 @@ func (s *WagerStorage) CreateWager(ctx context.Context, wager pymwymi.Wager) *py
 }
 
 // this has race conditions and is important to only allow a single vote to make it through
-func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id string, wager *pymwymi.PersistedWager) *pymwymi.Error {
-	objectId, err := bson.ObjectIDFromHex(id)
-	if err != nil {
-		return pymwymi.Errorf(pymwymi.ErrBadInput, "invalid wager id (%v): %v", id, err)
-	}
+// we are handling race conditions with channels and a queue
+func (s *WagerStorage) UpdateWagerWithVote(ctx context.Context, id bson.ObjectID, wager *pymwymi.PersistedWager) *pymwymi.Error {
 	validStatuses := []pymwymi.WagerStatus{pymwymi.StateCreated, pymwymi.StatePending}
 	filter := bson.D{
-		{Key: "_id", Value: objectId},
+		{Key: "_id", Value: id},
 		{Key: "status", Value: bson.D{{Key: "$in", Value: validStatuses}}},
 	}
 	update := bson.M{
@@ -81,24 +81,121 @@ func (s *WagerStorage) GetWagerByID(ctx context.Context, id string) (*pymwymi.Pe
 	return &wager, nil
 }
 
-// you can submit an empty walletAddress but not an empty status
-func (s *WagerStorage) GetWagersByStatus(
+func (s *WagerStorage) GetPastWagers(
 	ctx context.Context,
 	walletAddress string,
-	status pymwymi.WagerStatus,
 	pageOpts *pymwymi.PageOpts,
 ) ([]pymwymi.PersistedWager, *pymwymi.Error) {
 	result := []pymwymi.PersistedWager{}
-	filter := bson.D{bson.E{Key: "status", Value: status}}
-	if walletAddress != "" {
-		filter = append(filter, bson.E{Key: "participants.walletAddress", Value: walletAddress})
+	filter := bson.D{
+		{Key: "participants.walletAddress", Value: walletAddress},
+		{Key: "$or", Value: bson.A{
+			bson.D{{Key: "status", Value: pymwymi.StateClaimed}},
+			bson.D{{Key: "status", Value: pymwymi.StateCancelled}},
+			bson.D{
+				{Key: "status", Value: pymwymi.StateCompleted},
+				{Key: "winner", Value: bson.D{{Key: "$ne", Value: walletAddress}}},
+			},
+		}},
 	}
 	options := setPageOptions(options.Find(), pageOpts)
 	cursor, err := s.c.Find(ctx, filter, options)
 	if err != nil {
-		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get wagers: %s", err.Error())
+		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get past wagers: %s", err.Error())
 	}
-	cursor.All(ctx, &result)
+	for cursor.Next(ctx) {
+		var w pymwymi.PersistedWager
+		if err := cursor.Decode(&w); err != nil {
+			log.Printf("Failed to decode: %v\n", err)
+			continue
+		}
+		result = append(result, w)
+	}
+	return result, nil
+}
+
+func (s *WagerStorage) GetClaimableWagers(
+	ctx context.Context,
+	walletAddress string,
+	pageOpts *pymwymi.PageOpts,
+) ([]pymwymi.PersistedWager, *pymwymi.Error) {
+	result := []pymwymi.PersistedWager{}
+	filter := bson.D{
+		bson.E{Key: "status", Value: pymwymi.StateCreated},
+		bson.E{Key: "participants.walletAddress", Value: walletAddress},
+		bson.E{Key: "winner", Value: walletAddress},
+	}
+	options := setPageOptions(options.Find(), pageOpts)
+	cursor, err := s.c.Find(ctx, filter, options)
+	if err != nil {
+		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get claimable wagers: %s", err.Error())
+	}
+	for cursor.Next(ctx) {
+		var w pymwymi.PersistedWager
+		if err := cursor.Decode(&w); err != nil {
+			log.Printf("Failed to decode: %v\n", err)
+			continue
+		}
+		result = append(result, w)
+	}
+	return result, nil
+}
+
+// you can submit an empty walletAddress but not an empty status
+func (s *WagerStorage) GetCreatedWagers(
+	ctx context.Context,
+	walletAddress string,
+	creator bool,
+	pageOpts *pymwymi.PageOpts,
+) ([]pymwymi.PersistedWager, *pymwymi.Error) {
+	result := []pymwymi.PersistedWager{}
+	filter := bson.D{
+		bson.E{Key: "status", Value: pymwymi.StateCreated},
+		bson.E{Key: "participants.walletAddress", Value: walletAddress},
+	}
+	if creator {
+		filter = append(filter, bson.E{Key: "creator", Value: walletAddress})
+	}
+	options := setPageOptions(options.Find(), pageOpts)
+	cursor, err := s.c.Find(ctx, filter, options)
+	if err != nil {
+		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get created wagers: %s", err.Error())
+	}
+	for cursor.Next(ctx) {
+		var w pymwymi.PersistedWager
+		if err := cursor.Decode(&w); err != nil {
+			log.Printf("Failed to decode: %v\n", err)
+			continue
+		}
+		result = append(result, w)
+	}
+	return result, nil
+}
+
+// you can submit an empty walletAddress but not an empty status
+func (s *WagerStorage) GetPendingWagers(
+	ctx context.Context,
+	walletAddress string,
+	pageOpts *pymwymi.PageOpts,
+) ([]pymwymi.PersistedWager, *pymwymi.Error) {
+	result := []pymwymi.PersistedWager{}
+	filter := bson.D{
+		bson.E{Key: "status", Value: pymwymi.StatePending},
+		bson.E{Key: "participants.walletAddress", Value: walletAddress},
+	}
+	options := setPageOptions(options.Find(), pageOpts)
+	cursor, err := s.c.Find(ctx, filter, options)
+	if err != nil {
+		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get pending wagers: %s", err.Error())
+	}
+	for cursor.Next(ctx) {
+		var w pymwymi.PersistedWager
+		if err := cursor.Decode(&w); err != nil {
+			log.Printf("Failed to decode: %v\n", err)
+			continue
+		}
+		result = append(result, w)
+	}
 	return result, nil
 }
 

@@ -1,29 +1,19 @@
-'use client'
-
-import Link from 'next/link'
 import { useWagers } from '../get-wagers'
 import { WagerStatus } from '@/types/wager'
-import { useState } from 'react'
-import WagersList from '../wagers-list'
+import SentList from './sent-list'
+import { getUser } from '@/lib/server-only-utils'
 
-/**
- * @TODO add tabs for wagers - Completed, Invitations, Ongoing, Claimable?
- * @TODO add new wager button & form 
- */
 
-// 
-
-export default function Page() {
-  const [page, setPage] = useState(1)
-  const { data, isLoading, error } = useWagers(WagerStatus.Created, page)
-
-  console.log(`err: ${error}, data: ${JSON.stringify(data)}`)
+export default async function Page() {
+  const user = await getUser()
+  if (!user) {
+    return null
+  }
   return (
     <div>
       <div className="tabs tabs-border">
-        <WagersList title='Wagers you sent' wagers={data?.data ?? []} />
+        <SentList user={user} />
       </div>
-
     </div>
 
   )

@@ -1,5 +1,7 @@
 package pymwymi
 
+import "go.mongodb.org/mongo-driver/v2/bson"
+
 // how are we going top represent high precision amouunts?
 // min stake == 5 dollars
 // initially only usdc supported
@@ -7,7 +9,7 @@ package pymwymi
 // perhaps sol.
 
 type (
-	WagerStatus       int8
+	WagerStatus       int
 	InteractionStatus string
 	VoteIntent        string
 )
@@ -65,8 +67,8 @@ type Wager struct {
 }
 
 type PersistedWager struct {
-	ID        string `bson:"_id,omitempty" json:"_id"`
-	CreatedAt string `bson:"createdAt" json:"createdAt"`
-	UpdatedAt string `bson:"updatedAt" json:"updatedAt"`
+	ID        bson.ObjectID `bson:"_id,omitempty" json:"_id"`
+	CreatedAt string        `bson:"createdAt" json:"createdAt"`
+	UpdatedAt string        `bson:"updatedAt" json:"updatedAt"`
 	Wager     `bson:",inline" json:",inline"`
 }
