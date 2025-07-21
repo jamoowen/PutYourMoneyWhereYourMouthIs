@@ -1,9 +1,6 @@
-import Link from 'next/link'
-import { cn, getAuthStatus } from '@/lib/utils' // optional utility for conditional classes
-import NewWager from './new-wager'
-import { cookies, headers } from 'next/headers'
-import WagersTabs from './wagers-tabs'
 import { getUser } from '@/lib/server-only-utils'
+import NewWager from './components/new-wager'
+import WagersTabs from './components/wagers-tabs'
 
 export default async function WagersLayout({
     children,

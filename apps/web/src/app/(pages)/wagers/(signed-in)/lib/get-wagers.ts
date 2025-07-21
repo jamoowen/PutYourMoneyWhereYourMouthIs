@@ -9,10 +9,11 @@ export type ExtraQueryOptions = {
 
 const fetchWagers = async (status: number, page: number, limit: number, options?: ExtraQueryOptions): Promise<PaginatedResponse<Wager[]>> => {
     let url = process.env.NEXT_PUBLIC_API_URL + `/wager/list?status=${status}&page=${page}&limit=${limit}`
-    if (options?.creator) {
+    if (options?.creator != null) {
         url += `&creator=${options.creator}`
     }
-    if (options?.winner) {
+
+    if (options?.winner != null) {
         url += `&winner=${options.winner}`
     }
 
@@ -24,19 +25,29 @@ const fetchWagers = async (status: number, page: number, limit: number, options?
     return await response.json()
 }
 
-const useWagers = (status: WagerStatus, page = 1, limit = 20) => {
+// not accepted by opponent yet
+const useSentWagers = (page = 1, limit = 20) => {
     return useQuery({
-        queryKey: ['wagers', limit],
-        queryFn: () => fetchWagers(status, page, limit),
+        queryKey: ['sentWagers', limit],
+        queryFn: () => fetchWagers(WagerStatus.Created, page, limit, { creator: true }),
     })
 }
 
-const useCreatedWagers = (page = 1, creator: boolean, limit = 20) => {
+// not accepted by user yet
+const useReceivedWagers = (page = 1, limit = 20) => {
     return useQuery({
-        queryKey: ['createdWagers', limit],
-        queryFn: () => fetchWagers(WagerStatus.Created, page, limit, { creator }),
+        queryKey: ['receivedWagers', limit],
+        queryFn: () => fetchWagers(WagerStatus.Created, page, limit, { creator: false }),
     })
 }
+
+const usePendingWagers = (page = 1, limit = 20) => {
+    return useQuery({
+        queryKey: ['pendingWagers', limit],
+        queryFn: () => fetchWagers(WagerStatus.Pending, page, limit),
+    })
+}
+
 
 const useClaimableWagers = (page = 1, limit = 20) => {
     return useQuery({
@@ -52,4 +63,4 @@ const usePastWagers = (page = 1, limit = 20) => {
     })
 }
 
-export { fetchWagers, useWagers, useCreatedWagers, useClaimableWagers, usePastWagers }
+export { fetchWagers, useSentWagers, useReceivedWagers, useClaimableWagers, usePastWagers }

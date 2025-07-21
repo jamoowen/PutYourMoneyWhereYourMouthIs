@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/jamoowen/PutYourMoneyWhereYourMouthIs/services/pymwymi"
@@ -155,8 +156,11 @@ func (s *WagerStorage) GetCreatedWagers(
 	}
 	if creator {
 		filter = append(filter, bson.E{Key: "creator", Value: walletAddress})
+	} else {
+		filter = append(filter, bson.E{Key: "creator", Value: bson.D{{Key: "$ne", Value: walletAddress}}})
 	}
 	options := setPageOptions(options.Find(), pageOpts)
+	fmt.Printf("filter: %v\n", filter)
 	cursor, err := s.c.Find(ctx, filter, options)
 	if err != nil {
 		return result, pymwymi.Errorf(pymwymi.ErrInternal, "failed to get created wagers: %s", err.Error())

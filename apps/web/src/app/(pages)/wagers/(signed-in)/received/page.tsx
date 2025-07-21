@@ -1,23 +1,18 @@
-'use client'
+import { getUser } from '@/lib/server-only-utils'
+import ReceivedList from './received-list'
 
-import Link from 'next/link'
+export default async function Page() {
+    const user = await getUser()
+    if (!user) {
+        return null
+    }
 
-/**
- * @TODO add tabs for wagers - Completed, Invitations, Ongoing, Claimable?
- * @TODO add new wager button & form 
- */
-export default function Page() {
-
-
-  return (
-    <div>
-
-      <div className="tabs tabs-border">
-
-      </div>
-
-    </div>
-
-  )
+    return (
+        <div>
+            <div className="tabs tabs-border">
+                <ReceivedList user={user} />
+            </div>
+        </div>
+    )
 }
 
