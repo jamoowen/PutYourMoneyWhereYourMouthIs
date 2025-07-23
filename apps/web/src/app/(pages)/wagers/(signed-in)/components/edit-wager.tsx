@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Wager, WagerStatus } from '@/types/wager'
+import { Vote, VoteIntent, Wager, WagerStatus } from '@/types/wager'
 import { cn } from '@/lib/utils'
+import { useAccount } from 'wagmi'
 
 enum EditOptions {
     ACCEPT = 'Accept',
@@ -69,6 +70,8 @@ export default function EditWager({
     walletAddress: string
 }) {
     const router = useRouter()
+    const { address, isConnected, chainId } = useAccount()
+
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [selectedAction, setSelectedAction] = useState<EditOptions | null>(null)
@@ -105,7 +108,6 @@ export default function EditWager({
         },
     }
 
-
     if (!wager) return null
 
     const getAvailableActions = () => {
@@ -128,6 +130,70 @@ export default function EditWager({
     }
 
     const availableActions = getAvailableActions()
+
+    // should probably be passed to the mutate function... 
+    async function handleAccept() {
+        if (!wager || !participant) return
+        try {
+
+            if (!isConnected || address !== user.walletAddress) {
+                const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
+                dialog.showModal()
+                return
+            }
+            setIsSubmitting(true)
+            const transaction =
+            // first we must await the user sign the transaction...
+            const
+                let stakeSignature: string
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/${wager.id}/vote`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    wagerId: wager.id,
+                    stakeSignature
+                }),
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            const data = await res.text()
+            if (!res.ok) throw new Error(`Failed to submit vote: ${data}`)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    async function handleVote(voteSelection: 'won' | 'lost' | 'cancel') {
+        if (!wager || !participant) return
+        try {
+            let vote: Vote;
+            if (voteSelection === 'won') {
+                vote = { hasVoted: true, intent: VoteIntent.Winner, winner: walletAddress }
+            } else if (voteSelection === 'lost') {
+                vote = { hasVoted: true, intent: VoteIntent.Winner, winner: participant.walletAddress }
+            } else if (voteSelection === 'cancel') {
+                vote = { hasVoted: true, intent: VoteIntent.Cancel, winner: "" }
+            } else {
+                throw new Error('Invalid vote selection')
+            }
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/${wager.id}/vote`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    wagerId: wager.id,
+                    vote
+                }),
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            const data = await res.text()
+            if (!res.ok) throw new Error(`Failed to submit vote: ${data}`)
+        } catch (error) {
+            console.error(error)
+        }
+    }
 
     async function submitAction(action: EditOptions) {
         try {
@@ -210,6 +276,22 @@ export default function EditWager({
             <dialog id="confirm_action_modal" className="modal">
                 <div className="modal-box">
                     <h3 className="font-bold text-lg">Confirm Action</h3>
+                    {
+                        selectedAction === EditOptions.VOTE ? (
+                            <>
+                                <input
+                                    type="radio" name="radio-12" defaultChecked
+                                    className="radio bg-red-100 border-red-300 checked:bg-red-200 checked:text-red-600 checked:border-red-600" />
+                                <input
+                                    type="radio" name="radio-12" defaultChecked
+                                    className="radio bg-blue-100 border-blue-300 checked:bg-blue-200 checked:text-blue-600 checked:border-blue-600" />
+                            </>
+                        ) : (
+                            <>
+                            </>
+                        )
+
+                    }
                     <p className="py-4">
                         Are you sure you want to <strong>{selectedAction}</strong> this wager?
                     </p>

@@ -22,13 +22,13 @@ export enum WagerStatus {
 
 export type Vote = {
     hasVoted: boolean
-    Intent: VoteIntent
-    Winner: string
+    intent: VoteIntent
+    winner: string
 }
 
 export type Player = {
     walletAddress: string
-    vote: string
+    vote: Vote
     hasStaked: boolean
     stakeStatus: string
     hasWithdrawn: boolean
