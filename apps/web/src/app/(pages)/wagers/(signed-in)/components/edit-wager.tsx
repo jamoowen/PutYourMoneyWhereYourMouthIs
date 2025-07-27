@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Vote, VoteIntent, Wager, WagerStatus } from '@/types/wager'
 import { cn } from '@/lib/utils'
-import { useAccount } from 'wagmi'
+import { useAccount, useConfig } from 'wagmi'
+import { writeContract } from '@wagmi/core'
+import contractJson from '@/contracts/WagerEscrow.json' assert { type: 'json' }
+import { getChainId, getPYMWYMIContractAddress, getTokenAddress } from '@/lib/blockchain'
+import { Abi } from 'viem'
 
 enum EditOptions {
     ACCEPT = 'Accept',
@@ -14,53 +18,6 @@ enum EditOptions {
     CLAIM = 'Claim',
 }
 
-const handleAcceptWager = async (wager: Wager) => {
-    // first we need user to sign transaction
-
-}
-
-const handleVoteWager = async (wager: Wager, vote: { hasVoted: boolean, intent: string }) => {
-    const payload = {
-        wagerId: wager.id,
-        vote
-    }
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/vote`, {
-            method: 'PATCH',
-            body: JSON.stringify(payload),
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-        if (!res.ok) throw new Error('Request failed')
-    } catch (err) {
-        console.error(err)
-    }
-}
-
-const handleCancelWager = async (wager: Wager) => {
-    const payload = {
-        wagerId: wager.id,
-        vote: {
-            hasVoted: true,
-            intent: "cancel"
-        }
-    }
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/vote`, {
-            method: 'PATCH',
-            body: JSON.stringify(payload),
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-        if (!res.ok) throw new Error('Request failed')
-    } catch (err) {
-        console.error(err)
-    }
-}
 
 export default function EditWager({
     wager,
@@ -69,24 +26,110 @@ export default function EditWager({
     wager: Wager | null
     walletAddress: string
 }) {
+    if (!wager) {
+        return
+    }
+
     const router = useRouter()
-    const { address, isConnected, chainId } = useAccount()
+    const { address, isConnected } = useAccount()
+    const config = useConfig()
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [selectedAction, setSelectedAction] = useState<EditOptions | null>(null)
+    const [voteIntent, setVoteIntent] = useState<VoteIntent | null>(null)
 
     const participant = wager?.participants.find((p) => p.walletAddress !== walletAddress)
     const user = wager?.participants.find((p) => p.walletAddress === walletAddress)
 
-    const EditActions = {
+    const handleAcceptWager = async () => {
+        // first we need user to sign transaction
+        // then once we recievieve the transaction hash we must post to backend
+        // we want to invalidate the received wagers
+        if (!wager || !participant) return
+        try {
+            if (!isConnected || address !== walletAddress) {
+                const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
+                dialog.showModal()
+                return
+            }
+            setIsSubmitting(true)
+
+            const selectedChainId = getChainId(wager.chain)
+            const contractAddress = getPYMWYMIContractAddress()
+            const tokenAddress = getTokenAddress(wager.currency, selectedChainId)
+
+            // first we must await the user sign the transaction...
+            const transactionHash = await writeContract(config, {
+                address: contractAddress,
+                abi: contractJson.abi as Abi,
+                functionName: 'acceptWager',
+                args: [
+                    wager.smartContractId,
+                    BigInt(wager.stake),
+                    tokenAddress,
+                ],
+            })
+            console.log(`transaction hash: `, transactionHash)
+
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/${wager.id}/accept`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    wagerId: wager.id,
+                    stakeSignature: transactionHash
+                }),
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            const data = await res.text()
+            console.log(`api response: `, data)
+            if (!res.ok) throw new Error(`Failed to submit vote: ${data}`)
+        } catch (error) {
+            console.error(error)
+        }
+
+    }
+
+    const handleCancelWager = async () => {
+        const payload = {
+            wagerId: wager.id,
+            vote: {
+                hasVoted: true,
+                intent: "cancel"
+            }
+        }
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/vote`, {
+                method: 'PATCH',
+                body: JSON.stringify(payload),
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            if (!res.ok) throw new Error('Request failed')
+        } catch (err) {
+            console.error(err)
+        }
+    }
+
+    const handleClaimWinnings = async () => {
+        console.log(wager)
+        //
+    }
+
+    const editActions: Record<EditOptions, { label: string, handler: () => Promise<void>, confirmation: string, affectedQueryKeys: string[] }> = {
         [EditOptions.ACCEPT]: {
             label: "Accept",
+            handler: handleAcceptWager,
             confirmation: "Are you sure you want to accept this wager?",
             affectedQueryKeys: ["receivedWagers", "pendingWagers"]
         },
         [EditOptions.DECLINE]: {
             label: "Decline",
+            handler: handleCancelWager,
             confirmation: "Are you sure you want to decline this wager?",
             affectedQueryKeys: ["receivedWagers"]
         },
@@ -97,12 +140,14 @@ export default function EditWager({
             affectedQueryKeys: ["receivedWagers", "pendingWagers"]
         },
         [EditOptions.VOTE]: {
-            route: "/vote",
+            label: "Vote",
+            handler: handleVote,
             confirmation: "Are you sure you want to vote for this wager?",
             affectedQueryKeys: ["pendingWagers"]
         },
         [EditOptions.CLAIM]: {
-            route: "/claim",
+            label: "Claim",
+            handler: handleClaimWinnings,
             confirmation: "Are you sure you want to claim this wager?",
             affectedQueryKeys: ["pendingWagers"]
         },
@@ -131,51 +176,14 @@ export default function EditWager({
 
     const availableActions = getAvailableActions()
 
-    // should probably be passed to the mutate function... 
-    async function handleAccept() {
-        if (!wager || !participant) return
+    async function handleVote() {
+        if (!wager || !participant || !voteIntent) return
         try {
-
-            if (!isConnected || address !== user.walletAddress) {
-                const dialog = document.getElementById('sign_in_modal') as HTMLDialogElement
-                dialog.showModal()
-                return
-            }
-            setIsSubmitting(true)
-            const transaction =
-            // first we must await the user sign the transaction...
-            const
-                let stakeSignature: string
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/${wager.id}/vote`, {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    wagerId: wager.id,
-                    stakeSignature
-                }),
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            const data = await res.text()
-            if (!res.ok) throw new Error(`Failed to submit vote: ${data}`)
-        } catch (error) {
-            console.error(error)
-        }
-    }
-
-    async function handleVote(voteSelection: 'won' | 'lost' | 'cancel') {
-        if (!wager || !participant) return
-        try {
-            let vote: Vote;
-            if (voteSelection === 'won') {
-                vote = { hasVoted: true, intent: VoteIntent.Winner, winner: walletAddress }
-            } else if (voteSelection === 'lost') {
-                vote = { hasVoted: true, intent: VoteIntent.Winner, winner: participant.walletAddress }
-            } else if (voteSelection === 'cancel') {
-                vote = { hasVoted: true, intent: VoteIntent.Cancel, winner: "" }
+            let vote: Vote
+            if (voteIntent === VoteIntent.Winner) {
+                vote = { hasVoted: true, intent: voteIntent, winner: walletAddress }
             } else {
-                throw new Error('Invalid vote selection')
+                vote = { hasVoted: true, intent: voteIntent, winner: "" }
             }
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/${wager.id}/vote`, {
                 method: 'PATCH',
@@ -197,18 +205,15 @@ export default function EditWager({
 
     async function submitAction(action: EditOptions) {
         try {
-            const payload =
-                setIsSubmitting(true)
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wager/${wager?.id}/action`, {
-                method: 'POST',
-                body: JSON.stringify({ action }),
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
+            setIsSubmitting(true)
 
-            if (!res.ok) throw new Error('Request failed')
+
+            const editAction = editActions[action]
+            if (!editAction) return
+
+            console.log(`submitting action: ${editAction.label}`)
+
+            await editAction.handler()
 
             setError(null)
             const editModal = (document.getElementById('edit_wager_modal') as HTMLDialogElement).close()
@@ -251,6 +256,7 @@ export default function EditWager({
                                     setSelectedAction(action)
                                     const confirmModal = document.getElementById('confirm_action_modal') as HTMLDialogElement
                                     confirmModal?.showModal()
+                                    editActions[action]
                                 }}
                                 className={cn(
                                     'btn',
@@ -280,14 +286,21 @@ export default function EditWager({
                         selectedAction === EditOptions.VOTE ? (
                             <>
                                 <input
-                                    type="radio" name="radio-12" defaultChecked
+                                    type="radio"
+                                    name="radio-12"
+                                    defaultChecked
+                                    onChange={() => setVoteIntent(VoteIntent.Cancel)}
                                     className="radio bg-red-100 border-red-300 checked:bg-red-200 checked:text-red-600 checked:border-red-600" />
                                 <input
-                                    type="radio" name="radio-12" defaultChecked
+                                    type="radio"
+                                    name="radio-12"
+                                    defaultChecked
+                                    onChange={() => setVoteIntent(VoteIntent.Winner)}
                                     className="radio bg-blue-100 border-blue-300 checked:bg-blue-200 checked:text-blue-600 checked:border-blue-600" />
                             </>
                         ) : (
                             <>
+
                             </>
                         )
 
@@ -297,6 +310,13 @@ export default function EditWager({
                     </p>
                     <div className="flex justify-end gap-3">
                         <button
+                            className="btn btn-primary"
+                            disabled={isSubmitting}
+                            onClick={() => selectedAction && submitAction(selectedAction)}
+                        >
+                            {isSubmitting ? 'Processing...' : 'Confirm'}
+                        </button>
+                        <button
                             className="btn btn-outline"
                             onClick={() => {
                                 const dialog = document.getElementById('confirm_action_modal') as HTMLDialogElement
@@ -305,13 +325,6 @@ export default function EditWager({
                             }}
                         >
                             Cancel
-                        </button>
-                        <button
-                            className="btn btn-primary"
-                            disabled={isSubmitting}
-                            onClick={() => selectedAction && submitAction(selectedAction)}
-                        >
-                            {isSubmitting ? 'Processing...' : 'Confirm'}
                         </button>
                     </div>
                 </div>

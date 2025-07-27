@@ -38,6 +38,7 @@ export type Player = {
 export type Wager = {
     id: number
     transactionHash: string
+    smartContractId: string
     creator: string
     creationStatus: number
     name: string
